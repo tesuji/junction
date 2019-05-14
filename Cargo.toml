@@ -1,8 +1,9 @@
 [package]
 name = "junction"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Lzu Tao <taolzu@gmail.com>"]
 categories = ["api-bindings", "os::windows-apis"]
+documentation = "https://docs.rs/junction/*/x86_64-pc-windows-msvc/junction/"
 edition = "2018"
 exclude = [
     "ci/*",
@@ -14,6 +15,9 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/lzutao/junction"
 description = "library for working with NTFS junctions"
+
+[package.metadata.docs.rs]
+default-target = "x86_64-pc-windows-msvc"
 
 [dependencies]
 scopeguard = "1"
