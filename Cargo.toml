@@ -1,0 +1,36 @@
+[package]
+name = "junction"
+version = "0.1.0"
+authors = ["Lzu Tao <taolzu@gmail.com>"]
+categories = ["api-bindings", "os::windows-apis"]
+edition = "2018"
+exclude = [
+    "ci/*",
+    "HOW-TO-RELEASE.md",
+    "azure-pipelines.yml",
+]
+keywords = ["junction", "symlink"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/lzutao/junction"
+description = "library for working with NTFS junctions"
+
+[dependencies]
+scopeguard = "1"
+lazy_static = "1"
+
+[target.'cfg(windows)'.dependencies.winapi]
+version = "0.3"
+features = [
+    "errhandlingapi",
+    "fileapi",
+    "guiddef",
+    "handleapi",
+    "ioapiset",
+    "winbase",
+    "winioctl",
+    "winnt",
+]
+
+[dev-dependencies]
+tempfile = "3"
