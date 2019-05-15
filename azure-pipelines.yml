@@ -96,6 +96,7 @@ jobs:
   - job: 'Clippy'
     pool:
       vmImage: vs2017-win2016
+    dependsOn: Windows
     steps:
       - powershell: Set-MpPreference -DisableRealtimeMonitoring $true
         displayName: Disable Windows Defender
