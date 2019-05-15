@@ -3,7 +3,7 @@ trigger:
     include: ['*']
     exclude: ['gh-pages']
   tags:
-    include: ['*']
+    exclude: ['*']
 
 jobs:
   - job: 'Windows'
