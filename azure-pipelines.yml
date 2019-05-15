@@ -67,6 +67,7 @@ jobs:
   - job: 'Rustdoc'
     pool:
       vmImage: vs2017-win2016
+    condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     steps:
       - powershell: Set-MpPreference -DisableRealtimeMonitoring $true
         displayName: Disable Windows Defender
@@ -91,7 +92,6 @@ jobs:
           set -x
           git push --force origin master:gh-pages
         displayName: 'Build and commit pages'
-        condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
 
   - job: 'Clippy'
     pool:
