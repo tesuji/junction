@@ -21,7 +21,6 @@ default-target = "x86_64-pc-windows-msvc"
 
 [dependencies]
 scopeguard = "1"
-lazy_static = "1"
 
 [target.'cfg(windows)'.dependencies.winapi]
 version = "0.3"

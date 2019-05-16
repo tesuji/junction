@@ -5,22 +5,17 @@ use self::types::{
     ReparseDataBuffer, MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE, REPARSE_DATA_BUFFER_HEADER_SIZE,
 };
 
-use lazy_static::lazy_static;
 use std::{
-    ffi::OsStr,
     io,
-    os::windows::ffi::OsStrExt,
     path::{Path, PathBuf},
     ptr,
 };
 use winapi::um::winnt;
 
-lazy_static! {
-    /// This prefix indicates to NTFS that the path is to be treated as a non-interpreted
-    /// path in the virtual file system.
-    static ref NON_INTERPRETED_PATH_PREFIX: Box<[u16]> = OsStr::new(r"\??\").encode_wide().collect();
-}
-const NON_INTERPRETED_PATH_PREFIX_SIZE: u16 = 4;
+/// This prefix indicates to NTFS that the path is to be treated as a non-interpreted
+/// path in the virtual file system.
+/// => "\??\"
+const NON_INTERPRETED_PATH_PREFIX: [u16; 4] = [0x005c, 0x003f, 0x003f, 0x005c];
 const WCHAR_SIZE: u16 = std::mem::size_of::<u16>() as _;
 
 pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
@@ -35,16 +30,13 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     // We're using low-level APIs to create the junction, and these are more picky about paths.
     // For example, forward slashes cannot be used as a path separator, so we should try to
     // canonicalize the path first.
-    let target = self::helpers::get_full_path(target)?;
+    let mut target = self::helpers::get_full_path(target)?;
     fs::create_dir(junction)?;
     let handle =
         self::helpers::open_reparse_point(junction, winnt::GENERIC_READ | winnt::GENERIC_WRITE)?;
     // "\??\" + target
-    let target_wchar: Vec<u16> = NON_INTERPRETED_PATH_PREFIX
-        .iter()
-        .chain(target.iter())
-        .cloned()
-        .collect();
+    let mut target_wchar: Vec<u16> = NON_INTERPRETED_PATH_PREFIX.to_vec();
+    target_wchar.append(&mut target);
     // Len without `UNICODE_NULL` at the end
     let target_len_in_bytes = target_wchar.len() as u16 * WCHAR_SIZE;
     // Check if `target_wchar.len()` may lead to a buffer overflow.
@@ -126,7 +118,7 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
         };
         // In case of "\??\C:\foo\bar"
         if wide.starts_with(&NON_INTERPRETED_PATH_PREFIX) {
-            wide = &wide[(NON_INTERPRETED_PATH_PREFIX_SIZE as usize)..];
+            wide = &wide[(NON_INTERPRETED_PATH_PREFIX.len())..];
         }
         Ok(PathBuf::from(OsString::from_wide(wide)))
     } else {
