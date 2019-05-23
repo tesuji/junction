@@ -7,6 +7,6 @@ else
 fi
 
 set -ex
-curl -sSLf -o rustup-init.exe 'https://s3-ap-southeast-2.amazonaws.com/rbtcollins-experiments/rustup/rustup-init.exe'
+curl -sSLf -o rustup-init.exe 'https://win.rustup.rs/x86_64'
 ./rustup-init.exe -y --default-host=x86_64-pc-windows-msvc --default-toolchain="${toolchain}"
 rm ./rustup-init.exe
