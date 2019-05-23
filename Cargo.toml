@@ -6,9 +6,9 @@ categories = ["api-bindings", "os::windows-apis"]
 documentation = "https://docs.rs/junction/*/x86_64-pc-windows-msvc/junction/"
 edition = "2018"
 exclude = [
-    "ci/*",
-    "HOW-TO-RELEASE.md",
-    "azure-pipelines.yml",
+    "/ci/*",
+    "/HOW-TO-RELEASE.md",
+    "/azure-pipelines.yml",
 ]
 keywords = ["junction", "symlink"]
 license = "MIT"
