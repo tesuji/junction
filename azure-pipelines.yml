@@ -31,13 +31,10 @@ jobs:
     steps:
       - powershell: Set-MpPreference -DisableRealtimeMonitoring $true
         displayName: Disable Windows Defender
-      - bash: |
-          sh ci/install_rust_windows.sh
-          echo '##vso[task.setvariable variable=PATH;]$(PATH);$(USERPROFILE)\.cargo\bin'
-        displayName: Install Rust
+      - template: ci/install-rust.yml
       - bash: |
           sh ci/install_mingw.sh
-          echo '##vso[task.setvariable variable=PATH;]C:\mingw\$(MINGW_DIR)\bin;$(PATH)'
+          echo '##vso[task.prependpath]C:\mingw\$(MINGW_DIR)\bin'
         displayName: Check out MinGW toolchain
         condition: variables['MINGW_DIR']
       - bash: |
@@ -71,10 +68,7 @@ jobs:
     steps:
       - powershell: Set-MpPreference -DisableRealtimeMonitoring $true
         displayName: Disable Windows Defender
-      - bash: |
-          sh ci/install_rust_windows.sh
-          echo '##vso[task.setvariable variable=PATH;]$(PATH);$(USERPROFILE)\.cargo\bin'
-        displayName: Install Rust
+      - template: ci/install-rust.yml
       - bash: |
           set -ex
           cargo doc --all # --document-private-items
@@ -100,24 +94,14 @@ jobs:
     steps:
       - powershell: Set-MpPreference -DisableRealtimeMonitoring $true
         displayName: Disable Windows Defender
-      - bash: |
-          sh ci/install_rust_windows.sh
-          echo '##vso[task.setvariable variable=PATH;]$(PATH);$(USERPROFILE)\.cargo\bin'
-        displayName: Install Rust
-      - script: rustup component add clippy
-        displayName: Install clippy
-      - script: cargo clippy --all --all-targets --all-features -- -Dwarnings
+      - template: ci/install-rust.yml
+      - bash: cargo clippy --all --all-targets --all-features -- -Dwarnings
         displayName: Run Clippy
 
   - job: 'Rustfmt'
     pool:
       vmImage: Ubuntu-16.04
     steps:
-      - bash: |
-          curl -sSLf https://sh.rustup.rs | sh -s -- --default-toolchain=stable -y
-          echo '##vso[task.setvariable variable=PATH;]$(PATH):~/.cargo/bin'
-        displayName: Install Rust
-      - script: rustup component add rustfmt
-        displayName: Install rustfmt
-      - script: cargo fmt --all -- --check
+      - template: ci/install-rust.yml
+      - bash: cargo fmt --all -- --check
         displayName: Run rustfmt

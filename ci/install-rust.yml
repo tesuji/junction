@@ -1,0 +1,4 @@
+steps:
+
+- script: rustup self update
+  displayName: Self-update rustup
