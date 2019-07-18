@@ -73,18 +73,10 @@ jobs:
           set -ex
           cargo doc --all # --document-private-items
           echo '<meta http-equiv=refresh content=0;url=junction/index.html>' > target/doc/index.html
-          cd target/doc
-          du -sch
-          git init
-          git config --local user.name "Azure Pipelines"
-          git config --local user.email "azuredevops@microsoft.com"
-          git config --local core.autocrlf input
-          git add .
-          git commit --quiet -m 'Publishing GitHub Pages'
-          set +x
-          git remote add origin "https://lzutao:$(GH_DEPLOY_KEY)@github.com/lzutao/junction.git"
-          set -x
-          git push --force origin master:gh-pages
+          sh ./ci/ghpages-deploy.sh
+        env:
+          ENCRYPTED_KEY: $(encrypted_key)
+          ENCRYPTED_IV: $(encrypted_iv)
         displayName: 'Build and commit pages'
 
   - job: 'Clippy'
