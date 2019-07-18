@@ -195,7 +195,7 @@ mod tests {
         check!(fs::create_dir_all(&junction));
 
         match super::create(&target, &junction) {
-            Err(ref e) if e.raw_os_error() == Some(ERROR_ALREADY_EXISTS) => (),
+            Err(ref e) if e.raw_os_error() == Some(ERROR_ALREADY_EXISTS) => {}
             _ => panic!("directory exists before creating"),
         }
     }
@@ -208,7 +208,7 @@ mod tests {
         let junction = tmpdir.path().join("junction");
 
         match super::create(&target, &junction) {
-            Ok(()) => (),
+            Ok(()) => {}
             _ => panic!("junction should point to non exist target path"),
         }
     }
@@ -219,21 +219,21 @@ mod tests {
 
         let non_existence_dir = tmpdir.path().join("non_existence_dir");
         match super::delete(&non_existence_dir) {
-            Err(ref e) if e.kind() == io::ErrorKind::NotFound => (),
+            Err(ref e) if e.kind() == io::ErrorKind::NotFound => {}
             _ => panic!("target path does not exist or is not a directory"),
         }
 
         let dir_not_junction = tmpdir.path().join("dir_not_junction");
         check!(fs::create_dir_all(&dir_not_junction));
         match super::delete(&dir_not_junction) {
-            Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => (),
+            Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
             _ => panic!("target path is not a junction point"),
         }
 
         let file = tmpdir.path().join("foo-file");
         check!(check!(File::create(&file)).write_all(b"foo"));
         match super::delete(&file) {
-            Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => (),
+            Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
             _ => panic!("target path is not a junction point"),
         }
     }
@@ -250,7 +250,7 @@ mod tests {
         let no_such_file = tmpdir.path().join("file");
         check!(check!(File::create(&no_such_file)).write_all(b"foo"));
         match super::exists(&no_such_file) {
-            Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => (),
+            Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
             _ => panic!("target exists but not a junction"),
         }
 
@@ -286,7 +286,7 @@ mod tests {
 
         check!(super::delete(&junction));
         match super::exists(&junction) {
-            Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => (),
+            Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
             _ => panic!("junction had been deleted"),
         }
         assert!(
@@ -313,21 +313,21 @@ mod tests {
 
         let non_existence_dir = tmpdir.path().join("non_existence_dir");
         match super::get_target(&non_existence_dir) {
-            Err(ref e) if e.kind() == io::ErrorKind::NotFound => (),
+            Err(ref e) if e.kind() == io::ErrorKind::NotFound => {}
             _ => panic!("target path does not exist or is not a directory"),
         }
 
         let dir_not_junction = tmpdir.path().join("dir_not_junction");
         check!(fs::create_dir_all(&dir_not_junction));
         match super::get_target(&dir_not_junction) {
-            Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => (),
+            Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
             _ => panic!("target path is not a junction point"),
         }
 
         let file = tmpdir.path().join("foo-file");
         check!(check!(File::create(&file)).write_all(b"foo"));
         match super::get_target(&file) {
-            Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => (),
+            Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
             _ => panic!("target path is not a junction point"),
         }
     }
