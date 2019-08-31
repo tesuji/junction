@@ -1,6 +1,6 @@
 [package]
 name = "junction"
-version = "0.1.2"
+version = "0.1.2" # Also update `html_root_url` in lib.rs
 authors = ["Lzu Tao <taolzu@gmail.com>"]
 categories = ["api-bindings", "os::windows-apis"]
 documentation = "https://docs.rs/junction/*/x86_64-pc-windows-msvc/junction/"

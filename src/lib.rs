@@ -3,6 +3,7 @@
 //! Junction Points are a little known NTFS v5+ feature roughly equivalent to UNIX
 //! symbolic links. They are supported in Windows 2000 and onwards but cannot be
 //! accessed without special tools.
+#![doc(html_root_url = "https://docs.rs/junction/0.1.2")]
 #![cfg(windows)]
 #![deny(rust_2018_idioms)]
 
