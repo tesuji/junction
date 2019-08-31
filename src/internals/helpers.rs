@@ -148,7 +148,7 @@ fn os_str_to_utf16(s: &OsStr) -> Vec<u16> {
 // yielded the data which has been read from the syscall. The return value
 // from this closure is then the return value of the function.
 //
-// Taken from src/libstd/sys/windows/mod.rs#L106
+// Taken from rust-lang/rust/src/libstd/sys/windows/mod.rs#L106
 fn fill_utf16_buf<F1, F2, T>(mut f1: F1, f2: F2) -> io::Result<T>
 where
     F1: FnMut(*mut u16, u32) -> u32,

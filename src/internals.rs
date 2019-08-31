@@ -14,8 +14,7 @@ use winapi::um::winnt;
 
 /// This prefix indicates to NTFS that the path is to be treated as a non-interpreted
 /// path in the virtual file system.
-/// => "\??\"
-const NON_INTERPRETED_PATH_PREFIX: [u16; 4] = [0x005c, 0x003f, 0x003f, 0x005c];
+const NON_INTERPRETED_PATH_PREFIX: [u16; 4] = [b'\\' as u16, b'?' as _, b'?' as _, b'\\' as _];
 const WCHAR_SIZE: u16 = std::mem::size_of::<u16>() as _;
 
 pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
