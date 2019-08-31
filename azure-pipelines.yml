@@ -49,8 +49,11 @@ jobs:
           cargo -Vv
           rustc -Vv
           cargo build -v --target '$(TARGET)'
+        displayName: Build
+      - bash: |
+          set -ex
           cargo test -v --target '$(TARGET)'
-        displayName: Script
+        displayName: Test
       - powershell: |
           Set-PSDebug -Trace 1
           Get-ChildItem -Path target\debug\junction-test-*\ | Select-Object FullName, Target
