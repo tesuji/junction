@@ -8,6 +8,7 @@
   cargo package
   ```
   Check if files in package are correct by `cargo package --list`.
+
 5. Now upload the package
   ```bash
   cargo publish
