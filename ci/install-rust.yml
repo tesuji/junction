@@ -1,4 +1,0 @@
-steps:
-
-- script: rustup self update && rustup update
-  displayName: Self-update rustup
