@@ -46,7 +46,7 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     // Redefine the above char array into a ReparseDataBuffer we can work with
     let mut data = [0u8; winnt::MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize];
     #[allow(clippy::cast_ptr_alignment)]
-    let rdb = data.as_mut_ptr() as *mut ReparseDataBuffer;
+    let rdb = data.as_mut_ptr().cast::<ReparseDataBuffer>();
     unsafe {
         let rdb = &mut *rdb;
         // Set the type of reparse point we are creating
@@ -63,8 +63,8 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
 
         // Safe because we checked `MAX_AVAILABLE_PATH_BUFFER`
         ptr::copy_nonoverlapping(
-            target_wchar.as_ptr() as *const u16,
-            rdb.reparse_buffer.path_buffer.as_mut_ptr() as _,
+            target_wchar.as_ptr().cast::<u16>(),
+            rdb.reparse_buffer.path_buffer.as_mut_ptr().cast(),
             target_wchar.len(),
         );
 

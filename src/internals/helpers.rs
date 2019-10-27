@@ -5,17 +5,7 @@ use winapi::um::{
     errhandlingapi, fileapi, handleapi, ioapiset::DeviceIoControl, winbase, winioctl, winnt,
 };
 
-const WIN32_SYSCALL_FAIL: i32 = 0;
-
-pub fn open_reparse_point(
-    reparse_point: &Path,
-    access_mode: u32,
-) -> io::Result<ScopeGuard<winnt::HANDLE, fn(winnt::HANDLE)>> {
-    use fileapi::{CreateFileW, OPEN_EXISTING};
-    use handleapi::INVALID_HANDLE_VALUE;
-    use winbase::{FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT};
-    use winnt::{FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE};
-
+pub fn open_reparse_point(reparse_point: &Path, access_mode: u32) -> io::Result<ScopeGuard<HANDLE, fn(HANDLE)>> {
     let path = os_str_to_utf16(reparse_point.as_os_str());
     let handle = unsafe {
         CreateFileW(
@@ -29,10 +19,9 @@ pub fn open_reparse_point(
         )
     };
     if ptr::eq(handle, INVALID_HANDLE_VALUE) {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok(scopeguard::guard(handle, close_winnt_handle))
+        return Err(io::Error::last_os_error());
     }
+    Ok(scopeguard::guard(handle, close_winnt_handle))
 }
 
 pub fn get_reparse_data_point<'a>(
@@ -41,29 +30,26 @@ pub fn get_reparse_data_point<'a>(
 ) -> io::Result<&'a ReparseDataBuffer> {
     // Redefine the above char array into a ReparseDataBuffer we can work with
     #[allow(clippy::cast_ptr_alignment)]
-    let reparse_data = data.as_mut_ptr() as *mut ReparseDataBuffer;
+    let rdb = data.as_mut_ptr().cast::<ReparseDataBuffer>();
 
     // Call DeviceIoControl to get the reparse point data
-
     let mut bytes_returned: u32 = 0;
-    let result = unsafe {
+    if unsafe {
         DeviceIoControl(
             handle,
             winioctl::FSCTL_GET_REPARSE_POINT,
             ptr::null_mut(),
             0,
-            reparse_data as _,
+            reparse_data.cast(),
             winnt::MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
             &mut bytes_returned,
             ptr::null_mut(),
         )
-    };
-
-    if result == WIN32_SYSCALL_FAIL {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok({ unsafe { &*reparse_data } })
+    } == 0
+    {
+        return Err(io::Error::last_os_error());
     }
+    Ok({ unsafe { &*rdb } })
 }
 
 pub fn set_reparse_point(
@@ -72,24 +58,22 @@ pub fn set_reparse_point(
     len: u32,
 ) -> io::Result<()> {
     let mut bytes_returned: u32 = 0;
-    let result = unsafe {
+    if unsafe {
         DeviceIoControl(
             handle,
             winioctl::FSCTL_SET_REPARSE_POINT,
-            reparse_data as _,
+            reparse_data.cast(),
             len,
             ptr::null_mut(),
             0,
             &mut bytes_returned,
             ptr::null_mut(),
         )
-    };
-
-    if result == WIN32_SYSCALL_FAIL {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok(())
+    } == 0
+    {
+        return Err(io::Error::last_os_error());
     }
+    Ok(())
 }
 
 // See https://msdn.microsoft.com/en-us/library/windows/desktop/aa364560(v=vs.85).aspx
@@ -99,24 +83,23 @@ pub fn delete_reparse_point(handle: winnt::HANDLE) -> io::Result<()> {
     let mut rgdb: ReparseGuidDataBuffer = unsafe { std::mem::zeroed() };
     rgdb.reparse_tag = winnt::IO_REPARSE_TAG_MOUNT_POINT;
     let mut bytes_returned: u32 = 0;
-    let result = unsafe {
+
+    if unsafe {
         DeviceIoControl(
             handle,
             winioctl::FSCTL_DELETE_REPARSE_POINT,
-            &mut rgdb as *mut ReparseGuidDataBuffer as _,
+            (&mut rgdb as *mut ReparseGuidDataBuffer).cast(),
             u32::from(REPARSE_GUID_DATA_BUFFER_HEADER_SIZE),
             ptr::null_mut(),
             0,
             &mut bytes_returned,
             ptr::null_mut(),
         )
-    };
-
-    if result == WIN32_SYSCALL_FAIL {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok(())
+    } == 0
+    {
+        return Err(io::Error::last_os_error());
     }
+    Ok(())
 }
 
 fn close_winnt_handle(handle: winnt::HANDLE) {
@@ -202,7 +185,7 @@ pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
     let file_part: *mut u16 = ptr::null_mut();
     #[allow(clippy::cast_ptr_alignment)]
     fill_utf16_buf(
-        |buf, sz| unsafe { fileapi::GetFullPathNameW(path.as_ptr(), sz, buf, file_part as _) },
+        |buf, sz| unsafe { fileapi::GetFullPathNameW(path.as_ptr(), sz, buf, file_part.cast()) },
         |buf| buf.into(),
     )
 }
