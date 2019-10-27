@@ -1,8 +1,15 @@
-//! Library for working with NTFS junctions.
-//!
-//! Junction Points are a little known NTFS v5+ feature roughly equivalent to UNIX
-//! symbolic links. They are supported in Windows 2000 and onwards but cannot be
-//! accessed without special tools.
+/*!
+Library for working with NTFS junctions.
+
+Junction Points are a little known NTFS v5+ feature roughly equivalent to Unix
+directory symbolic links.
+
+They are supported in Windows 2000 and onwards, where a directory
+serves as a symbolic link to another directory on the computer. For example,
+if the directory `D:\SYMLINK` specified `C:\WINNT\SYSTEM32` as its target, then
+an application accessing `D:\SYMLINK\DRIVERS` would in reality be accessing
+`C:\WINNT\SYSTEM32\DRIVERS`.
+*/
 #![doc(html_root_url = "https://docs.rs/junction/0.1.2")]
 #![cfg(windows)]
 #![deny(rust_2018_idioms)]
