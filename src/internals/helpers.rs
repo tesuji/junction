@@ -1,9 +1,14 @@
 use super::types::ReparseDataBuffer;
+
+use std::ffi::OsStr;
+use std::io;
+use std::path::Path;
+use std::ptr;
+use std::os::windows::ffi::OsStrExt;
+
 use scopeguard::ScopeGuard;
-use std::{ffi::OsStr, io, path::Path, ptr};
-use winapi::um::{
-    errhandlingapi, fileapi, handleapi, ioapiset::DeviceIoControl, winbase, winioctl, winnt,
-};
+use winapi::um::{errhandlingapi, fileapi, handleapi, winbase, winioctl, winnt};
+use winapi::um::ioapiset::DeviceIoControl;
 
 pub fn open_reparse_point(reparse_point: &Path, access_mode: u32) -> io::Result<ScopeGuard<HANDLE, fn(HANDLE)>> {
     let path = os_str_to_utf16(reparse_point.as_os_str());
@@ -110,10 +115,7 @@ fn close_winnt_handle(handle: winnt::HANDLE) {
 }
 
 fn os_str_to_utf16(s: &OsStr) -> Vec<u16> {
-    use std::os::windows::ffi::OsStrExt;
-    let mut maybe_result: Vec<u16> = s.encode_wide().collect();
-    maybe_result.push(0);
-    maybe_result
+    s.encode_wide().chain(std::iter::once(0)).collect()
 }
 
 // Many Windows APIs follow a pattern of where we hand a buffer and then they
