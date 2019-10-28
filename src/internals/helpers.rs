@@ -41,9 +41,8 @@ pub fn get_reparse_data_point<'a>(
     data: &'a mut [u8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize],
 ) -> io::Result<&'a ReparseDataBuffer> {
     // Redefine the above char array into a ReparseDataBuffer we can work with
-    #[allow(clippy::cast_ptr_alignment)]
+    #[warn(clippy::cast_ptr_alignment)]
     let rdb = data.as_mut_ptr().cast::<ReparseDataBuffer>();
-
     // Call DeviceIoControl to get the reparse point data
     let mut bytes_returned: u32 = 0;
     if unsafe {
@@ -185,7 +184,7 @@ where
 pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
     let path = os_str_to_utf16(target.as_os_str());
     let file_part: *mut u16 = ptr::null_mut();
-    #[allow(clippy::cast_ptr_alignment)]
+    #[warn(clippy::cast_ptr_alignment)]
     fill_utf16_buf(
         |buf, sz| unsafe { GetFullPathNameW(path.as_ptr(), sz, buf, file_part.cast()) },
         |buf| buf.into(),

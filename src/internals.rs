@@ -44,7 +44,7 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     let in_buffer_size: u16;
     // Redefine the above char array into a ReparseDataBuffer we can work with
     let mut data = [0u8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize];
-    #[allow(clippy::cast_ptr_alignment)]
+    #[warn(clippy::cast_ptr_alignment)]
     let rdb = data.as_mut_ptr().cast::<ReparseDataBuffer>();
     unsafe {
         let rdb = &mut *rdb;
