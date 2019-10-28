@@ -1,14 +1,21 @@
-use super::types::ReparseDataBuffer;
+use super::types::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE;
+use super::types::{ReparseDataBuffer, ReparseGuidDataBuffer};
 
 use std::ffi::OsStr;
 use std::io;
+use std::os::windows::ffi::OsStrExt;
 use std::path::Path;
 use std::ptr;
-use std::os::windows::ffi::OsStrExt;
 
 use scopeguard::ScopeGuard;
-use winapi::um::{errhandlingapi, fileapi, handleapi, winbase, winioctl, winnt};
+use winapi::um::errhandlingapi::{GetLastError, SetLastError};
+use winapi::um::fileapi::{CreateFileW, GetFullPathNameW, OPEN_EXISTING};
+use winapi::um::handleapi::{CloseHandle, INVALID_HANDLE_VALUE};
 use winapi::um::ioapiset::DeviceIoControl;
+use winapi::um::winbase::{FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT};
+use winapi::um::winioctl::{FSCTL_DELETE_REPARSE_POINT, FSCTL_GET_REPARSE_POINT, FSCTL_SET_REPARSE_POINT};
+use winapi::um::winnt::{FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE};
+use winapi::um::winnt::{HANDLE, IO_REPARSE_TAG_MOUNT_POINT, MAXIMUM_REPARSE_DATA_BUFFER_SIZE};
 
 pub fn open_reparse_point(reparse_point: &Path, access_mode: u32) -> io::Result<ScopeGuard<HANDLE, fn(HANDLE)>> {
     let path = os_str_to_utf16(reparse_point.as_os_str());
@@ -30,8 +37,8 @@ pub fn open_reparse_point(reparse_point: &Path, access_mode: u32) -> io::Result<
 }
 
 pub fn get_reparse_data_point<'a>(
-    handle: winnt::HANDLE,
-    data: &'a mut [u8; winnt::MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize],
+    handle: HANDLE,
+    data: &'a mut [u8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize],
 ) -> io::Result<&'a ReparseDataBuffer> {
     // Redefine the above char array into a ReparseDataBuffer we can work with
     #[allow(clippy::cast_ptr_alignment)]
@@ -42,11 +49,11 @@ pub fn get_reparse_data_point<'a>(
     if unsafe {
         DeviceIoControl(
             handle,
-            winioctl::FSCTL_GET_REPARSE_POINT,
+            FSCTL_GET_REPARSE_POINT,
             ptr::null_mut(),
             0,
             reparse_data.cast(),
-            winnt::MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
+            MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
             &mut bytes_returned,
             ptr::null_mut(),
         )
@@ -57,16 +64,12 @@ pub fn get_reparse_data_point<'a>(
     Ok({ unsafe { &*rdb } })
 }
 
-pub fn set_reparse_point(
-    handle: winnt::HANDLE,
-    reparse_data: *mut ReparseDataBuffer,
-    len: u32,
-) -> io::Result<()> {
+pub fn set_reparse_point(handle: HANDLE, reparse_data: *mut ReparseDataBuffer, len: u32) -> io::Result<()> {
     let mut bytes_returned: u32 = 0;
     if unsafe {
         DeviceIoControl(
             handle,
-            winioctl::FSCTL_SET_REPARSE_POINT,
+            FSCTL_SET_REPARSE_POINT,
             reparse_data.cast(),
             len,
             ptr::null_mut(),
@@ -82,17 +85,15 @@ pub fn set_reparse_point(
 }
 
 // See https://msdn.microsoft.com/en-us/library/windows/desktop/aa364560(v=vs.85).aspx
-pub fn delete_reparse_point(handle: winnt::HANDLE) -> io::Result<()> {
-    use super::types::ReparseGuidDataBuffer;
-    use super::types::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE;
+pub fn delete_reparse_point(handle: HANDLE) -> io::Result<()> {
     let mut rgdb: ReparseGuidDataBuffer = unsafe { std::mem::zeroed() };
-    rgdb.reparse_tag = winnt::IO_REPARSE_TAG_MOUNT_POINT;
+    rgdb.reparse_tag = IO_REPARSE_TAG_MOUNT_POINT;
     let mut bytes_returned: u32 = 0;
 
     if unsafe {
         DeviceIoControl(
             handle,
-            winioctl::FSCTL_DELETE_REPARSE_POINT,
+            FSCTL_DELETE_REPARSE_POINT,
             (&mut rgdb as *mut ReparseGuidDataBuffer).cast(),
             u32::from(REPARSE_GUID_DATA_BUFFER_HEADER_SIZE),
             ptr::null_mut(),
@@ -107,8 +108,7 @@ pub fn delete_reparse_point(handle: winnt::HANDLE) -> io::Result<()> {
     Ok(())
 }
 
-fn close_winnt_handle(handle: winnt::HANDLE) {
-    use handleapi::CloseHandle;
+fn close_winnt_handle(handle: HANDLE) {
     unsafe {
         CloseHandle(handle);
     }
@@ -165,13 +165,13 @@ where
             // then check it again if we get the "0 error value". If the "last
             // error" is still 0 then we interpret it as a 0 length buffer and
             // not an actual error.
-            errhandlingapi::SetLastError(0);
+            SetLastError(0);
             let k = match f1(buf.as_mut_ptr(), n as u32) {
-                0 if errhandlingapi::GetLastError() == 0 => 0,
+                0 if GetLastError() == 0 => 0,
                 0 => return Err(io::Error::last_os_error()),
                 n => n,
             } as usize;
-            if k == n && errhandlingapi::GetLastError() == ERROR_INSUFFICIENT_BUFFER {
+            if k == n && GetLastError() == ERROR_INSUFFICIENT_BUFFER {
                 n *= 2;
             } else if k >= n {
                 n = k;
@@ -187,7 +187,7 @@ pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
     let file_part: *mut u16 = ptr::null_mut();
     #[allow(clippy::cast_ptr_alignment)]
     fill_utf16_buf(
-        |buf, sz| unsafe { fileapi::GetFullPathNameW(path.as_ptr(), sz, buf, file_part.cast()) },
+        |buf, sz| unsafe { GetFullPathNameW(path.as_ptr(), sz, buf, file_part.cast()) },
         |buf| buf.into(),
     )
 }
