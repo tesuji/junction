@@ -1,27 +1,54 @@
-use super::types::ReparseDataBuffer;
+use super::types::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE;
+use super::types::{ReparseDataBuffer, ReparseGuidDataBuffer};
+
+use std::ffi::OsStr;
+use std::io;
+use std::mem;
+use std::os::windows::ffi::OsStrExt;
+use std::path::Path;
+use std::ptr;
+
 use scopeguard::ScopeGuard;
-use std::{ffi::OsStr, io, path::Path, ptr};
-use winapi::um::{
-    errhandlingapi, fileapi, handleapi, ioapiset::DeviceIoControl, winbase, winioctl, winnt,
-};
+use winapi::um::errhandlingapi::{GetLastError, SetLastError};
+use winapi::um::fileapi::{CreateFileW, GetFullPathNameW, OPEN_EXISTING};
+use winapi::um::handleapi::{CloseHandle, INVALID_HANDLE_VALUE};
+use winapi::um::ioapiset::DeviceIoControl;
+use winapi::um::processthreadsapi::{GetCurrentProcess, OpenProcessToken};
+use winapi::um::securitybaseapi::AdjustTokenPrivileges;
+use winapi::um::winbase::LookupPrivilegeValueW;
+use winapi::um::winbase::{FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT};
+use winapi::um::winioctl::{FSCTL_DELETE_REPARSE_POINT, FSCTL_GET_REPARSE_POINT, FSCTL_SET_REPARSE_POINT};
+use winapi::um::winnt::*;
 
-const WIN32_SYSCALL_FAIL: i32 = 0;
+#[rustfmt::skip]
+static SE_RESTORE_NAME: [u16; 19] = [
+    b'S' as u16, b'e' as _,
+    b'R' as _, b'e' as _, b's' as _, b't' as _, b'o' as _, b'r' as _, b'e' as _,
+    b'P' as _, b'r' as _, b'i' as _, b'v' as _, b'i' as _, b'l' as _, b'e' as _, b'g' as _, b'e' as _,
+    0,
+];
+#[rustfmt::skip]
+static SE_BACKUP_NAME: [u16; 18] = [
+    b'S' as u16, b'e' as _,
+    b'B' as _, b'a' as _, b'c' as _, b'k' as _, b'u' as _, b'p' as _,
+    b'P' as _, b'r' as _, b'i' as _, b'v' as _, b'i' as _, b'l' as _, b'e' as _, b'g' as _, b'e' as _,
+    0,
+];
 
-pub fn open_reparse_point(
-    reparse_point: &Path,
-    access_mode: u32,
-) -> io::Result<ScopeGuard<winnt::HANDLE, fn(winnt::HANDLE)>> {
-    use fileapi::{CreateFileW, OPEN_EXISTING};
-    use handleapi::INVALID_HANDLE_VALUE;
-    use winbase::{FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT};
-    use winnt::{FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE};
-
+pub fn open_reparse_point(reparse_point: &Path, rdwr: bool) -> io::Result<ScopeGuard<HANDLE, fn(HANDLE)>> {
+    // Obtain privilege in case we don't have it yet
+    set_privilege(rdwr)?;
     let path = os_str_to_utf16(reparse_point.as_os_str());
     let handle = unsafe {
+        let access = if rdwr {
+            GENERIC_READ | GENERIC_WRITE
+        } else {
+            GENERIC_READ
+        };
         CreateFileW(
             path.as_ptr(),
-            access_mode,
-            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            access,
+            0,
             ptr::null_mut(),
             OPEN_EXISTING,
             FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS,
@@ -29,108 +56,131 @@ pub fn open_reparse_point(
         )
     };
     if ptr::eq(handle, INVALID_HANDLE_VALUE) {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok(scopeguard::guard(handle, close_winnt_handle))
+        return Err(io::Error::last_os_error());
+    }
+    Ok(scopeguard::guard(handle, close_winnt_handle))
+}
+
+fn set_privilege(rdwr: bool) -> io::Result<()> {
+    const ERROR_NOT_ALL_ASSIGNED: u32 = 1300;
+    const TOKEN_PRIVILEGES_SIZE: u32 = mem::size_of::<TOKEN_PRIVILEGES>() as _;
+    unsafe {
+        let mut handle = ptr::null_mut();
+        if OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &mut handle) == 0 {
+            return Err(io::Error::last_os_error());
+        }
+        let mut tp: TOKEN_PRIVILEGES = mem::zeroed();
+        let name = if rdwr {
+            SE_RESTORE_NAME.as_ptr()
+        } else {
+            SE_BACKUP_NAME.as_ptr()
+        };
+        if LookupPrivilegeValueW(ptr::null(), name, &mut tp.Privileges[0].Luid) == 0 {
+            return Err(io::Error::last_os_error());
+        }
+        tp.PrivilegeCount = 1;
+        tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+        if AdjustTokenPrivileges(
+            handle,
+            0,
+            &mut tp,
+            TOKEN_PRIVILEGES_SIZE,
+            ptr::null_mut(),
+            ptr::null_mut(),
+        ) == 0
+        {
+            return Err(io::Error::last_os_error());
+        }
+        if GetLastError() == ERROR_NOT_ALL_ASSIGNED {
+            return Err(io::Error::from_raw_os_error(ERROR_NOT_ALL_ASSIGNED as i32));
+        }
+        if CloseHandle(handle) == 0 {
+            Err(io::Error::last_os_error())
+        } else {
+            Ok(())
+        }
     }
 }
 
 pub fn get_reparse_data_point<'a>(
-    handle: winnt::HANDLE,
-    data: &'a mut [u8; winnt::MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize],
+    handle: HANDLE,
+    data: &'a mut [u8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize],
 ) -> io::Result<&'a ReparseDataBuffer> {
     // Redefine the above char array into a ReparseDataBuffer we can work with
-    #[allow(clippy::cast_ptr_alignment)]
-    let reparse_data = data.as_mut_ptr() as *mut ReparseDataBuffer;
-
+    #[warn(clippy::cast_ptr_alignment)]
+    let rdb = data.as_mut_ptr().cast::<ReparseDataBuffer>();
     // Call DeviceIoControl to get the reparse point data
-
     let mut bytes_returned: u32 = 0;
-    let result = unsafe {
+    if unsafe {
         DeviceIoControl(
             handle,
-            winioctl::FSCTL_GET_REPARSE_POINT,
+            FSCTL_GET_REPARSE_POINT,
             ptr::null_mut(),
             0,
-            reparse_data as _,
-            winnt::MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
+            rdb.cast(),
+            MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
             &mut bytes_returned,
             ptr::null_mut(),
         )
-    };
-
-    if result == WIN32_SYSCALL_FAIL {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok({ unsafe { &*reparse_data } })
+    } == 0
+    {
+        return Err(io::Error::last_os_error());
     }
+    Ok({ unsafe { &*rdb } })
 }
 
-pub fn set_reparse_point(
-    handle: winnt::HANDLE,
-    reparse_data: *mut ReparseDataBuffer,
-    len: u32,
-) -> io::Result<()> {
+pub fn set_reparse_point(handle: HANDLE, rdb: *mut ReparseDataBuffer, len: u32) -> io::Result<()> {
     let mut bytes_returned: u32 = 0;
-    let result = unsafe {
+    if unsafe {
         DeviceIoControl(
             handle,
-            winioctl::FSCTL_SET_REPARSE_POINT,
-            reparse_data as _,
+            FSCTL_SET_REPARSE_POINT,
+            rdb.cast(),
             len,
             ptr::null_mut(),
             0,
             &mut bytes_returned,
             ptr::null_mut(),
         )
-    };
-
-    if result == WIN32_SYSCALL_FAIL {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok(())
+    } == 0
+    {
+        return Err(io::Error::last_os_error());
     }
+    Ok(())
 }
 
 // See https://msdn.microsoft.com/en-us/library/windows/desktop/aa364560(v=vs.85).aspx
-pub fn delete_reparse_point(handle: winnt::HANDLE) -> io::Result<()> {
-    use super::types::ReparseGuidDataBuffer;
-    use super::types::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE;
-    let mut rgdb: ReparseGuidDataBuffer = unsafe { std::mem::zeroed() };
-    rgdb.reparse_tag = winnt::IO_REPARSE_TAG_MOUNT_POINT;
+pub fn delete_reparse_point(handle: HANDLE) -> io::Result<()> {
+    let mut rgdb: ReparseGuidDataBuffer = unsafe { mem::zeroed() };
+    rgdb.reparse_tag = IO_REPARSE_TAG_MOUNT_POINT;
     let mut bytes_returned: u32 = 0;
-    let result = unsafe {
+
+    if unsafe {
         DeviceIoControl(
             handle,
-            winioctl::FSCTL_DELETE_REPARSE_POINT,
-            &mut rgdb as *mut ReparseGuidDataBuffer as _,
+            FSCTL_DELETE_REPARSE_POINT,
+            (&mut rgdb as *mut ReparseGuidDataBuffer).cast(),
             u32::from(REPARSE_GUID_DATA_BUFFER_HEADER_SIZE),
             ptr::null_mut(),
             0,
             &mut bytes_returned,
             ptr::null_mut(),
         )
-    };
-
-    if result == WIN32_SYSCALL_FAIL {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok(())
+    } == 0
+    {
+        return Err(io::Error::last_os_error());
     }
+    Ok(())
 }
 
-fn close_winnt_handle(handle: winnt::HANDLE) {
-    use handleapi::CloseHandle;
+fn close_winnt_handle(handle: HANDLE) {
     unsafe {
         CloseHandle(handle);
     }
 }
 
 fn os_str_to_utf16(s: &OsStr) -> Vec<u16> {
-    use std::os::windows::ffi::OsStrExt;
-    let mut maybe_result: Vec<u16> = s.encode_wide().collect();
-    maybe_result.push(0);
-    maybe_result
+    s.encode_wide().chain(std::iter::once(0)).collect()
 }
 
 // Many Windows APIs follow a pattern of where we hand a buffer and then they
@@ -180,13 +230,13 @@ where
             // then check it again if we get the "0 error value". If the "last
             // error" is still 0 then we interpret it as a 0 length buffer and
             // not an actual error.
-            errhandlingapi::SetLastError(0);
+            SetLastError(0);
             let k = match f1(buf.as_mut_ptr(), n as u32) {
-                0 if errhandlingapi::GetLastError() == 0 => 0,
+                0 if GetLastError() == 0 => 0,
                 0 => return Err(io::Error::last_os_error()),
                 n => n,
             } as usize;
-            if k == n && errhandlingapi::GetLastError() == ERROR_INSUFFICIENT_BUFFER {
+            if k == n && GetLastError() == ERROR_INSUFFICIENT_BUFFER {
                 n *= 2;
             } else if k >= n {
                 n = k;
@@ -200,9 +250,9 @@ where
 pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
     let path = os_str_to_utf16(target.as_os_str());
     let file_part: *mut u16 = ptr::null_mut();
-    #[allow(clippy::cast_ptr_alignment)]
+    #[warn(clippy::cast_ptr_alignment)]
     fill_utf16_buf(
-        |buf, sz| unsafe { fileapi::GetFullPathNameW(path.as_ptr(), sz, buf, file_part as _) },
+        |buf, sz| unsafe { GetFullPathNameW(path.as_ptr(), sz, buf, file_part.cast()) },
         |buf| buf.into(),
     )
 }

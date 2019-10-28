@@ -1,18 +1,23 @@
-//! Library for working with NTFS junctions.
-//!
-//! Junction Points are a little known NTFS v5+ feature roughly equivalent to UNIX
-//! symbolic links. They are supported in Windows 2000 and onwards but cannot be
-//! accessed without special tools.
+/*!
+Library for working with NTFS junctions.
+
+Junction Points are a little known NTFS v5+ feature roughly equivalent to Unix
+directory symbolic links.
+
+They are supported in Windows 2000 and onwards, where a directory
+serves as a symbolic link to another directory on the computer. For example,
+if the directory `D:\SYMLINK` specified `C:\WINNT\SYSTEM32` as its target, then
+an application accessing `D:\SYMLINK\DRIVERS` would in reality be accessing
+`C:\WINNT\SYSTEM32\DRIVERS`.
+*/
 #![doc(html_root_url = "https://docs.rs/junction/0.1.2")]
 #![cfg(windows)]
 #![deny(rust_2018_idioms)]
 
 mod internals;
 
-use std::{
-    io,
-    path::{Path, PathBuf},
-};
+use std::io;
+use std::path::{Path, PathBuf};
 
 /// Creates a junction point from the specified directory to the specified target directory.
 ///
@@ -104,11 +109,9 @@ pub fn get_target<P: AsRef<Path>>(junction: P) -> io::Result<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        fs::{self, File},
-        io::{self, Write},
-        os::windows::fs::symlink_file,
-    };
+    use std::fs::{self, File};
+    use std::io::{self, Write};
+    use std::os::windows::fs::symlink_file;
 
     // https://docs.microsoft.com/en-us/windows/desktop/debug/system-error-codes
     const ERROR_NOT_A_REPARSE_POINT: i32 = 0x1126;
@@ -267,23 +270,12 @@ mod tests {
             !junction_file.exists(),
             "file should not be located until junction created"
         );
-        assert_eq!(
-            check!(super::exists(&junction)),
-            false,
-            "junction not created yet"
-        );
+        assert_eq!(check!(super::exists(&junction)), false, "junction not created yet");
 
         check!(super::create(&target, &junction));
-        assert_eq!(
-            check!(super::exists(&junction)),
-            true,
-            "junction should exist now"
-        );
+        assert_eq!(check!(super::exists(&junction)), true, "junction should exist now");
         assert_eq!(&check!(super::get_target(&junction)), &target);
-        assert!(
-            junction_file.exists(),
-            "file should be accessible via the junction"
-        );
+        assert!(junction_file.exists(), "file should be accessible via the junction");
 
         check!(super::delete(&junction));
         match super::exists(&junction) {
