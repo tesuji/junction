@@ -12,7 +12,6 @@ use std::ptr;
 use std::slice;
 use std::{ffi::OsString, os::windows::ffi::OsStringExt};
 
-use winapi::um::winnt::{GENERIC_READ, GENERIC_WRITE};
 use winapi::um::winnt::{IO_REPARSE_TAG_MOUNT_POINT, MAXIMUM_REPARSE_DATA_BUFFER_SIZE};
 
 /// This prefix indicates to NTFS that the path is to be treated as a non-interpreted
@@ -32,7 +31,7 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     // canonicalize the path first.
     let mut target = helpers::get_full_path(target)?;
     fs::create_dir(junction)?;
-    let handle = helpers::open_reparse_point(junction, GENERIC_READ | GENERIC_WRITE)?;
+    let handle = helpers::open_reparse_point(junction, true)?;
     // "\??\" + target
     let len = NON_INTERPRETED_PATH_PREFIX.len().saturating_add(target.len());
     // Len without `UNICODE_NULL` at the end
@@ -80,7 +79,7 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
 }
 
 pub fn delete(junction: &Path) -> io::Result<()> {
-    let handle = helpers::open_reparse_point(junction, GENERIC_READ | GENERIC_WRITE)?;
+    let handle = helpers::open_reparse_point(junction, true)?;
     helpers::delete_reparse_point(*handle)
 }
 
@@ -88,7 +87,7 @@ pub fn exists(junction: &Path) -> io::Result<bool> {
     if !junction.exists() {
         return Ok(false);
     }
-    let handle = helpers::open_reparse_point(junction, GENERIC_READ)?;
+    let handle = helpers::open_reparse_point(junction, false)?;
     // Allocate enough space to fit the maximum sized reparse data buffer
     let mut data = [0u8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize];
     // RedefKine the above char array into a ReparseDataBuffer we can work with
@@ -101,7 +100,7 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
     if !junction.exists() {
         return Err(io::Error::new(io::ErrorKind::NotFound, "`junction` does not exist"));
     }
-    let handle = helpers::open_reparse_point(junction, GENERIC_READ)?;
+    let handle = helpers::open_reparse_point(junction, false).expect("just panic");
     let mut data = [0u8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize];
     // RedefKine the above char array into a ReparseDataBuffer we can work with
     let rdb = helpers::get_reparse_data_point(*handle, &mut data)?;

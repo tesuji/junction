@@ -3,6 +3,7 @@ use super::types::{ReparseDataBuffer, ReparseGuidDataBuffer};
 
 use std::ffi::OsStr;
 use std::io;
+use std::mem;
 use std::os::windows::ffi::OsStrExt;
 use std::path::Path;
 use std::ptr;
@@ -12,18 +13,42 @@ use winapi::um::errhandlingapi::{GetLastError, SetLastError};
 use winapi::um::fileapi::{CreateFileW, GetFullPathNameW, OPEN_EXISTING};
 use winapi::um::handleapi::{CloseHandle, INVALID_HANDLE_VALUE};
 use winapi::um::ioapiset::DeviceIoControl;
+use winapi::um::processthreadsapi::{GetCurrentProcess, OpenProcessToken};
+use winapi::um::securitybaseapi::AdjustTokenPrivileges;
+use winapi::um::winbase::LookupPrivilegeValueW;
 use winapi::um::winbase::{FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT};
 use winapi::um::winioctl::{FSCTL_DELETE_REPARSE_POINT, FSCTL_GET_REPARSE_POINT, FSCTL_SET_REPARSE_POINT};
-use winapi::um::winnt::{FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE};
-use winapi::um::winnt::{HANDLE, IO_REPARSE_TAG_MOUNT_POINT, MAXIMUM_REPARSE_DATA_BUFFER_SIZE};
+use winapi::um::winnt::*;
 
-pub fn open_reparse_point(reparse_point: &Path, access_mode: u32) -> io::Result<ScopeGuard<HANDLE, fn(HANDLE)>> {
+#[rustfmt::skip]
+static SE_RESTORE_NAME: [u16; 19] = [
+    b'S' as u16, b'e' as _,
+    b'R' as _, b'e' as _, b's' as _, b't' as _, b'o' as _, b'r' as _, b'e' as _,
+    b'P' as _, b'r' as _, b'i' as _, b'v' as _, b'i' as _, b'l' as _, b'e' as _, b'g' as _, b'e' as _,
+    0,
+];
+#[rustfmt::skip]
+static SE_BACKUP_NAME: [u16; 18] = [
+    b'S' as u16, b'e' as _,
+    b'B' as _, b'a' as _, b'c' as _, b'k' as _, b'u' as _, b'p' as _,
+    b'P' as _, b'r' as _, b'i' as _, b'v' as _, b'i' as _, b'l' as _, b'e' as _, b'g' as _, b'e' as _,
+    0,
+];
+
+pub fn open_reparse_point(reparse_point: &Path, rdwr: bool) -> io::Result<ScopeGuard<HANDLE, fn(HANDLE)>> {
+    // Obtain privilege in case we don't have it yet
+    set_privilege(rdwr)?;
     let path = os_str_to_utf16(reparse_point.as_os_str());
     let handle = unsafe {
+        let access = if rdwr {
+            GENERIC_READ | GENERIC_WRITE
+        } else {
+            GENERIC_READ
+        };
         CreateFileW(
             path.as_ptr(),
-            access_mode,
-            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            access,
+            0,
             ptr::null_mut(),
             OPEN_EXISTING,
             FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS,
@@ -34,6 +59,47 @@ pub fn open_reparse_point(reparse_point: &Path, access_mode: u32) -> io::Result<
         return Err(io::Error::last_os_error());
     }
     Ok(scopeguard::guard(handle, close_winnt_handle))
+}
+
+fn set_privilege(rdwr: bool) -> io::Result<()> {
+    const ERROR_NOT_ALL_ASSIGNED: u32 = 1300;
+    const TOKEN_PRIVILEGES_SIZE: u32 = mem::size_of::<TOKEN_PRIVILEGES>() as _;
+    unsafe {
+        let mut handle = ptr::null_mut();
+        if OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &mut handle) == 0 {
+            return Err(io::Error::last_os_error());
+        }
+        let mut tp: TOKEN_PRIVILEGES = mem::zeroed();
+        let name = if rdwr {
+            SE_RESTORE_NAME.as_ptr()
+        } else {
+            SE_BACKUP_NAME.as_ptr()
+        };
+        if LookupPrivilegeValueW(ptr::null(), name, &mut tp.Privileges[0].Luid) == 0 {
+            return Err(io::Error::last_os_error());
+        }
+        tp.PrivilegeCount = 1;
+        tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+        if AdjustTokenPrivileges(
+            handle,
+            0,
+            &mut tp,
+            TOKEN_PRIVILEGES_SIZE,
+            ptr::null_mut(),
+            ptr::null_mut(),
+        ) == 0
+        {
+            return Err(io::Error::last_os_error());
+        }
+        if GetLastError() == ERROR_NOT_ALL_ASSIGNED {
+            return Err(io::Error::from_raw_os_error(ERROR_NOT_ALL_ASSIGNED as i32));
+        }
+        if CloseHandle(handle) == 0 {
+            Err(io::Error::last_os_error())
+        } else {
+            Ok(())
+        }
+    }
 }
 
 pub fn get_reparse_data_point<'a>(
@@ -85,7 +151,7 @@ pub fn set_reparse_point(handle: HANDLE, rdb: *mut ReparseDataBuffer, len: u32) 
 
 // See https://msdn.microsoft.com/en-us/library/windows/desktop/aa364560(v=vs.85).aspx
 pub fn delete_reparse_point(handle: HANDLE) -> io::Result<()> {
-    let mut rgdb: ReparseGuidDataBuffer = unsafe { std::mem::zeroed() };
+    let mut rgdb: ReparseGuidDataBuffer = unsafe { mem::zeroed() };
     rgdb.reparse_tag = IO_REPARSE_TAG_MOUNT_POINT;
     let mut bytes_returned: u32 = 0;
 
