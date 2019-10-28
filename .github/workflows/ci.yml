@@ -63,7 +63,7 @@ jobs:
 
   rustdoc:
     runs-on: windows-latest
-    if: github.event_name != 'pull_request' && github.head_ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request' && github.event.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v1
         with:
