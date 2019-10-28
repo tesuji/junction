@@ -26,9 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Security` in case of vulnerabilities.
  -->
 
+## [0.1.3] - 2019-10-28
+### Changed
+* Obtain appropriate privilege before opening directories.
+
 ## [0.1.0] - 2019-05-15
 
 First release
 
 [0.2.0]: https://github.com/lzutao/junction/compare/v0.1.0...v0.2.0
+[0.2.0]: https://github.com/lzutao/junction/compare/v0.1.0...v0.1.3
 [0.1.0]: https://github.com/lzutao/junction/releases/tag/v0.1.0
