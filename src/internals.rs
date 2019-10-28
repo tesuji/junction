@@ -4,6 +4,7 @@ mod types;
 use types::ReparseDataBuffer;
 use types::{MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE, REPARSE_DATA_BUFFER_HEADER_SIZE};
 
+use std::cmp;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -33,44 +34,47 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     fs::create_dir(junction)?;
     let handle = helpers::open_reparse_point(junction, GENERIC_READ | GENERIC_WRITE)?;
     // "\??\" + target
-    let mut target_wchar: Vec<u16> = NON_INTERPRETED_PATH_PREFIX.to_vec();
-    target_wchar.append(&mut target);
+    let len = NON_INTERPRETED_PATH_PREFIX.len().saturating_add(target.len());
     // Len without `UNICODE_NULL` at the end
-    let target_len_in_bytes = target_wchar.len() as u16 * WCHAR_SIZE;
+    let target_len_in_bytes = (cmp::min(len, std::u16::MAX as usize) as u16).saturating_mul(WCHAR_SIZE);
     // Check if `target_wchar.len()` may lead to a buffer overflow.
     if target_len_in_bytes > MAX_AVAILABLE_PATH_BUFFER {
         return Err(io::Error::new(io::ErrorKind::Other, "`target` is too long"));
     }
-    let in_buffer_size: u16;
+
+    let mut target_wchar: Vec<u16> = Vec::with_capacity(len);
+    target_wchar.extend(&NON_INTERPRETED_PATH_PREFIX);
+    target_wchar.append(&mut target);
+
     // Redefine the above char array into a ReparseDataBuffer we can work with
     let mut data = [0u8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize];
     #[warn(clippy::cast_ptr_alignment)]
     let rdb = data.as_mut_ptr().cast::<ReparseDataBuffer>();
-    unsafe {
-        let rdb = &mut *rdb;
+    let in_buffer_size: u16 = unsafe {
         // Set the type of reparse point we are creating
-        rdb.reparse_tag = IO_REPARSE_TAG_MOUNT_POINT;
-        rdb.reserved = 0;
+        (*rdb).reparse_tag = IO_REPARSE_TAG_MOUNT_POINT;
+        (*rdb).reserved = 0;
 
         // Copy the junction's target
-        rdb.reparse_buffer.substitute_name_offset = 0;
-        rdb.reparse_buffer.substitute_name_length = target_len_in_bytes;
+        (*rdb).reparse_buffer.substitute_name_offset = 0;
+        (*rdb).reparse_buffer.substitute_name_length = target_len_in_bytes;
 
         // Copy the junction's link name
-        rdb.reparse_buffer.print_name_offset = target_len_in_bytes + UNICODE_NULL_SIZE;
-        rdb.reparse_buffer.print_name_length = 0;
+        (*rdb).reparse_buffer.print_name_offset = target_len_in_bytes + UNICODE_NULL_SIZE;
+        (*rdb).reparse_buffer.print_name_length = 0;
 
         // Safe because we checked `MAX_AVAILABLE_PATH_BUFFER`
         ptr::copy_nonoverlapping(
             target_wchar.as_ptr().cast::<u16>(),
-            rdb.reparse_buffer.path_buffer.as_mut_ptr().cast(),
+            (*rdb).reparse_buffer.path_buffer.as_mut_ptr(),
             target_wchar.len(),
         );
 
         // Set the total size of the data buffer
-        rdb.reparse_data_length = target_len_in_bytes + MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE + 2 * UNICODE_NULL_SIZE;
-        in_buffer_size = rdb.reparse_data_length + REPARSE_DATA_BUFFER_HEADER_SIZE;
-    }
+        (*rdb).reparse_data_length =
+            target_len_in_bytes.wrapping_add(MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE + 2 * UNICODE_NULL_SIZE);
+        (*rdb).reparse_data_length.wrapping_add(REPARSE_DATA_BUFFER_HEADER_SIZE)
+    };
 
     helpers::set_reparse_point(*handle, rdb, u32::from(in_buffer_size))
 }

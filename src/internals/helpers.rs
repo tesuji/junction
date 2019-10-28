@@ -51,7 +51,7 @@ pub fn get_reparse_data_point<'a>(
             FSCTL_GET_REPARSE_POINT,
             ptr::null_mut(),
             0,
-            reparse_data.cast(),
+            rdb.cast(),
             MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
             &mut bytes_returned,
             ptr::null_mut(),
@@ -63,13 +63,13 @@ pub fn get_reparse_data_point<'a>(
     Ok({ unsafe { &*rdb } })
 }
 
-pub fn set_reparse_point(handle: HANDLE, reparse_data: *mut ReparseDataBuffer, len: u32) -> io::Result<()> {
+pub fn set_reparse_point(handle: HANDLE, rdb: *mut ReparseDataBuffer, len: u32) -> io::Result<()> {
     let mut bytes_returned: u32 = 0;
     if unsafe {
         DeviceIoControl(
             handle,
             FSCTL_SET_REPARSE_POINT,
-            reparse_data.cast(),
+            rdb.cast(),
             len,
             ptr::null_mut(),
             0,
