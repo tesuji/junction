@@ -1,0 +1,114 @@
+name: Rust
+
+on:
+  push:
+    branches:
+      - 'master'
+      - '!gh-pages'
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      # RUSTFLAGS: -Ctarget-feature=+crt-static
+      RUST_BACKTRACE: 1
+      MINGW_URL: https://rust-lang-ci2.s3.amazonaws.com/rust-ci-mirror
+    strategy:
+      matrix:
+        target: [x86_64-pc-windows-msvc, i686-pc-windows-msvc, x86_64-pc-windows-gnu, i686-pc-windows-gnu]
+        include:
+          - target: x86_64-pc-windows-gnu
+            archive: x86_64-6.3.0-release-posix-seh-rt_v5-rev2.7z
+            mingw_dir: mingw64
+          - target: i686-pc-windows-gnu
+            archive: i686-6.3.0-release-posix-dwarf-rt_v5-rev2.7z
+            mingw_dir: mingw32
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - name: Install Rust
+        run: |
+          curl -sSL https://sh.rustup.rs | sh -s -- -y --default-toolchain=stable --profile=minimal
+          echo "##[add-path]$HOME/.cargo/bin"
+          export PATH="$PATH:$HOME/.cargo/bin"
+          rustup update --no-self-update stable
+        shell: bash
+      - name: Check out MinGW toolchain
+        run: |
+          set -ex
+          curl -sSf -O "${MINGW_URL}/${{ matrix.archive }}"
+          7z x -y "${{ matrix.archive }}" -o/c/mingw
+          rm "${{ matrix.archive }}"
+          set +ex
+          echo "##[add-path]C:\mingw\${{ matrix.mingw_dir }}\bin"
+        shell: bash
+        if: matrix.mingw_dir
+      - run: rustup target add ${{ matrix.target }}
+      - run: cargo fetch
+      - run: cargo build --target ${{ matrix.target }}
+      - run: cargo test --target ${{ matrix.target }}
+      - if: failure()
+        run: |
+          Set-PSDebug -Trace 1
+          Get-ChildItem -Path target\${{ matrix.target }}\debug\junction-test-*\ | Select-Object FullName, Target
+          Get-ChildItem -Path target\${{ matrix.target }}\debug\junction-test-*\junction | Select-Object FullName, Target
+        shell: powershell
+      - if: failure()
+        run: |
+          dir /aL C:\
+          dir /aL C:\Users
+        shell: cmd
+
+  rustdoc:
+    runs-on: windows-latest
+    if: github.event_name != 'pull_request' && github.head_ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - name: Install Rust
+        run: |
+          curl -sSL https://sh.rustup.rs | sh -s -- -y --default-toolchain=stable --profile=minimal -c rustfmt
+          echo "##[add-path]$HOME/.cargo/bin"
+          export PATH="$PATH:$HOME/.cargo/bin"
+          rustup update --no-self-update stable
+        shell: bash
+      - run: cargo doc --all --no-deps # --document-private-items
+      - run: echo '<meta http-equiv=refresh content=0;url=junction/index.html>' > target/doc/index.html
+      - run: sh ./ci/ghpages-deploy.sh
+        shell: bash
+        env:
+          ENCRYPTED_KEY: ${{ secrets.ENCRYPTED_KEY }}
+          ENCRYPTED_IV: ${{ secrets.ENCRYPTED_IV }}
+
+
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - run: |
+          rustup self update
+          rustup set profile minimal
+          rustup update --no-self-update stable
+          rustup component add rustfmt
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    runs-on: windows-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - name: Install Rust
+        run: |
+          curl -sSL https://sh.rustup.rs | sh -s -- -y --default-toolchain=beta --profile=minimal -c clippy
+          echo "##[add-path]$HOME/.cargo/bin"
+          export PATH="$PATH:$HOME/.cargo/bin"
+          rustup update --no-self-update beta
+        shell: bash
+      - run: cargo clippy --all --all-targets -- -D clippy::nursery -Dwarnings

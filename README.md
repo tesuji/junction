@@ -2,7 +2,7 @@
 
 Library for working with NTFS junctions.
 
-[![Build Status][azure-badge]][azure-url]
+[![Build Status][actions-badge]][actions-url]
 [![Documentation](https://docs.rs/junction/badge.svg)](https://docs.rs/junction)
 [![Crates.io](https://img.shields.io/crates/v/junction.svg)](https://crates.io/crates/junction)
 
@@ -17,10 +17,10 @@ Add this to your `Cargo.toml`:
 junction = "0.1"
 ```
 
-[azure-badge]: https://dev.azure.com/taolzu/junction/_apis/build/status/lzutao.junction?branchName=master
-[azure-url]: https://dev.azure.com/taolzu/junction/_build/latest?definitionId=3&branchName=master
+[actions-badge]: https://github.com/lzutao/junction/workflows/Rust/badge.svg?branchName=master
+[actions-url]: https://github.com/lzutao/junction/actions
 
-## Documentations when developing this crate
+## All relevant references
 
 * https://www.codeproject.com/Articles/194/Windows-2000-Junction-Points#The_Solution
 * https://www.codeproject.com/Articles/15633/Manipulating-NTFS-Junction-Points-in-NET
@@ -33,4 +33,4 @@ junction = "0.1"
 ## License
 
 All the code in this repository is released under the MIT License,
-for more information take a look at the COPYRIGHT file.
+for more information read COPYRIGHT file.
