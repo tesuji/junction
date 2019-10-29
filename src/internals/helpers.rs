@@ -69,6 +69,7 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
         if OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &mut handle) == 0 {
             return Err(io::Error::last_os_error());
         }
+        let () = handle;
         let mut tp: TOKEN_PRIVILEGES = mem::zeroed();
         let name = if rdwr {
             SE_RESTORE_NAME.as_ptr()
