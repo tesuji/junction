@@ -90,7 +90,6 @@ pub fn exists(junction: &Path) -> io::Result<bool> {
     let handle = helpers::open_reparse_point(junction, false)?;
     // Allocate enough space to fit the maximum sized reparse data buffer
     let mut data = [0u8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize];
-    // RedefKine the above char array into a ReparseDataBuffer we can work with
     let rdb = helpers::get_reparse_data_point(*handle, &mut data)?;
     // The reparse tag indicates if this is a junction or not
     Ok(rdb.reparse_tag == IO_REPARSE_TAG_MOUNT_POINT)
@@ -102,7 +101,6 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
     }
     let handle = helpers::open_reparse_point(junction, false).expect("just panic");
     let mut data = [0u8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize];
-    // RedefKine the above char array into a ReparseDataBuffer we can work with
     let rdb = helpers::get_reparse_data_point(*handle, &mut data)?;
     if rdb.reparse_tag == IO_REPARSE_TAG_MOUNT_POINT {
         let offset = rdb.reparse_buffer.substitute_name_offset / WCHAR_SIZE;
