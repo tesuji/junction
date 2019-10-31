@@ -28,32 +28,26 @@ jobs:
       - uses: actions/checkout@v1
         with:
           fetch-depth: 1
-      - name: Install Rust
-        run: |
-          curl -sSL https://sh.rustup.rs | sh -s -- -y --default-toolchain=stable --profile=minimal
-          echo "##[add-path]$HOME/.cargo/bin"
-          export PATH="$PATH:$HOME/.cargo/bin"
-          rustup update --no-self-update stable
-        shell: bash
+      - run: bash ci/install-rustup.bash
+      - run: bash ci/install-rust.bash stable-${{ matrix.target }}
       - name: Check out MinGW toolchain
         run: |
-          set -ex
+          set -x
           curl -sSf -O "${MINGW_URL}/${{ matrix.archive }}"
           7z x -y "${{ matrix.archive }}" -o/c/mingw
           rm "${{ matrix.archive }}"
-          set +ex
           echo "##[add-path]C:\mingw\${{ matrix.mingw_dir }}\bin"
         shell: bash
         if: matrix.mingw_dir
-      - run: rustup target add ${{ matrix.target }}
       - run: cargo fetch
-      - run: cargo build --target ${{ matrix.target }}
-      - run: cargo test --target ${{ matrix.target }}
+      - run: cargo build
+      - run: cargo build --all-targets
+      - run: cargo test
       - if: failure()
         run: |
           Set-PSDebug -Trace 1
-          Get-ChildItem -Path target\${{ matrix.target }}\debug\junction-test-*\ | Select-Object FullName, Target
-          Get-ChildItem -Path target\${{ matrix.target }}\debug\junction-test-*\junction | Select-Object FullName, Target
+          Get-ChildItem -Path target\debug\junction-test-*\ | Select-Object FullName, Target
+          Get-ChildItem -Path target\debug\junction-test-*\junction | Select-Object FullName, Target
         shell: powershell
       - if: failure()
         run: |
@@ -68,21 +62,14 @@ jobs:
       - uses: actions/checkout@v1
         with:
           fetch-depth: 1
-      - name: Install Rust
-        run: |
-          curl -sSL https://sh.rustup.rs | sh -s -- -y --default-toolchain=stable --profile=minimal -c rustfmt
-          echo "##[add-path]$HOME/.cargo/bin"
-          export PATH="$PATH:$HOME/.cargo/bin"
-          rustup update --no-self-update stable
-        shell: bash
+      - run: bash ci/install-rustup.bash
+      - run: bash ci/install-rust.bash stable
       - run: cargo doc --all --no-deps # --document-private-items
       - run: echo '<meta http-equiv=refresh content=0;url=junction/index.html>' > target/doc/index.html
-      - run: sh ./ci/ghpages-deploy.sh
-        shell: bash
+      - run: bash ./ci/ghpages-deploy.sh
         env:
           ENCRYPTED_KEY: ${{ secrets.ENCRYPTED_KEY }}
           ENCRYPTED_IV: ${{ secrets.ENCRYPTED_IV }}
-
 
   rustfmt:
     runs-on: ubuntu-latest
@@ -90,12 +77,10 @@ jobs:
       - uses: actions/checkout@v1
         with:
           fetch-depth: 1
-      - run: |
-          rustup self update
-          rustup set profile minimal
-          rustup update --no-self-update stable
-          rustup component add rustfmt
-      - run: cargo fmt --all -- --check
+      - run: bash ci/install-rustup.bash
+      - run: bash ci/install-rust.bash stable
+      - run: rustup component add rustfmt
+      - run: cargo fmt -- --check
 
   clippy:
     runs-on: windows-latest
@@ -104,11 +89,11 @@ jobs:
       - uses: actions/checkout@v1
         with:
           fetch-depth: 1
-      - name: Install Rust
-        run: |
-          curl -sSL https://sh.rustup.rs | sh -s -- -y --default-toolchain=beta --profile=minimal -c clippy
-          echo "##[add-path]$HOME/.cargo/bin"
-          export PATH="$PATH:$HOME/.cargo/bin"
-          rustup update --no-self-update beta
+      - run: bash ci/install-rustup.bash beta
+      - run: bash ci/install-rust.bash beta
+      - run: rustup component add clippy
+      - run: |
+          cargo check --all --all-targets
+          git ls-files '*.rs' | xargs touch
         shell: bash
       - run: cargo clippy --all --all-targets -- -D clippy::nursery -Dwarnings
