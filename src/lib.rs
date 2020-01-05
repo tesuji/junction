@@ -43,7 +43,7 @@ where
     P: AsRef<Path>,
     Q: AsRef<Path>,
 {
-    crate::internals::create(target.as_ref(), junction.as_ref())
+    internals::create(target.as_ref(), junction.as_ref())
 }
 
 /// Deletes a `junction` reparse point from the specified file or directory.
@@ -70,7 +70,7 @@ where
 /// }
 /// ```
 pub fn delete<P: AsRef<Path>>(junction: P) -> io::Result<()> {
-    crate::internals::delete(junction.as_ref())
+    internals::delete(junction.as_ref())
 }
 
 /// Determines whether the specified path exists and refers to a junction point.
@@ -86,7 +86,7 @@ pub fn delete<P: AsRef<Path>>(junction: P) -> io::Result<()> {
 /// }
 /// ```
 pub fn exists<P: AsRef<Path>>(junction: P) -> io::Result<bool> {
-    crate::internals::exists(junction.as_ref())
+    internals::exists(junction.as_ref())
 }
 
 /// Gets the target of the specified junction point.
@@ -104,7 +104,7 @@ pub fn exists<P: AsRef<Path>>(junction: P) -> io::Result<bool> {
 /// }
 /// ```
 pub fn get_target<P: AsRef<Path>>(junction: P) -> io::Result<PathBuf> {
-    crate::internals::get_target(junction.as_ref())
+    internals::get_target(junction.as_ref())
 }
 
 #[cfg(test)]
