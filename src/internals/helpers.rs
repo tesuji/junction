@@ -60,6 +60,9 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
         if OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &mut handle) == 0 {
             return Err(io::Error::last_os_error());
         }
+        let handle = scopeguard::guard(handle, |h| {
+            CloseHandle(h);
+        });
         let mut tp: TOKEN_PRIVILEGES = mem::zeroed();
         let name = if rdwr {
             SE_RESTORE_NAME.as_ptr()
@@ -72,7 +75,7 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
         tp.PrivilegeCount = 1;
         tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
         if AdjustTokenPrivileges(
-            handle,
+            *handle,
             0,
             &mut tp,
             TOKEN_PRIVILEGES_SIZE,
@@ -85,6 +88,8 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
         if GetLastError() == ERROR_NOT_ALL_ASSIGNED {
             return Err(io::Error::from_raw_os_error(ERROR_NOT_ALL_ASSIGNED as i32));
         }
+
+        let handle = ScopeGuard::into_inner(handle);
         if CloseHandle(handle) == 0 {
             Err(io::Error::last_os_error())
         } else {
