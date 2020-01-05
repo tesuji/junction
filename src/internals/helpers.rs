@@ -2,16 +2,18 @@ use super::types::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE;
 use super::types::{ReparseDataBuffer, ReparseGuidDataBuffer};
 
 use std::ffi::OsStr;
+use std::fs::{File, OpenOptions};
 use std::io;
 use std::mem;
 use std::os::windows::ffi::OsStrExt;
+use std::os::windows::fs::OpenOptionsExt;
 use std::path::Path;
 use std::ptr;
 
 use scopeguard::ScopeGuard;
 use winapi::um::errhandlingapi::{GetLastError, SetLastError};
-use winapi::um::fileapi::{CreateFileW, GetFullPathNameW, OPEN_EXISTING};
-use winapi::um::handleapi::{CloseHandle, INVALID_HANDLE_VALUE};
+use winapi::um::fileapi::GetFullPathNameW;
+use winapi::um::handleapi::CloseHandle;
 use winapi::um::ioapiset::DeviceIoControl;
 use winapi::um::processthreadsapi::{GetCurrentProcess, OpenProcessToken};
 use winapi::um::securitybaseapi::AdjustTokenPrivileges;
@@ -35,30 +37,19 @@ static SE_BACKUP_NAME: [u16; 18] = [
     0,
 ];
 
-pub fn open_reparse_point(reparse_point: &Path, rdwr: bool) -> io::Result<ScopeGuard<HANDLE, fn(HANDLE)>> {
+pub fn open_reparse_point(reparse_point: &Path, rdwr: bool) -> io::Result<File> {
     // Obtain privilege in case we don't have it yet
     set_privilege(rdwr)?;
-    let path = os_str_to_utf16(reparse_point.as_os_str());
-    let handle = unsafe {
-        let access = if rdwr {
-            GENERIC_READ | GENERIC_WRITE
-        } else {
-            GENERIC_READ
-        };
-        CreateFileW(
-            path.as_ptr(),
-            access,
-            0,
-            ptr::null_mut(),
-            OPEN_EXISTING,
-            FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS,
-            ptr::null_mut(),
-        )
+    let access = if rdwr {
+        GENERIC_READ | GENERIC_WRITE
+    } else {
+        GENERIC_READ
     };
-    if ptr::eq(handle, INVALID_HANDLE_VALUE) {
-        return Err(io::Error::last_os_error());
-    }
-    Ok(scopeguard::guard(handle, close_winnt_handle))
+    OpenOptions::new()
+        .access_mode(access)
+        .share_mode(0)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS)
+        .open(reparse_point)
 }
 
 fn set_privilege(rdwr: bool) -> io::Result<()> {
@@ -171,12 +162,6 @@ pub fn delete_reparse_point(handle: HANDLE) -> io::Result<()> {
         return Err(io::Error::last_os_error());
     }
     Ok(())
-}
-
-fn close_winnt_handle(handle: HANDLE) {
-    unsafe {
-        CloseHandle(handle);
-    }
 }
 
 fn os_str_to_utf16(s: &OsStr) -> Vec<u16> {

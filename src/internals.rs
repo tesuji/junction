@@ -6,11 +6,11 @@ use types::{MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE, REPARSE_DATA_BUFFER_HEADER_S
 
 use std::cmp;
 use std::fs;
-use std::io;
 use std::path::{Path, PathBuf};
 use std::ptr;
 use std::slice;
 use std::{ffi::OsString, os::windows::ffi::OsStringExt};
+use std::{io, os::windows::io::AsRawHandle};
 
 use winapi::um::winnt::{IO_REPARSE_TAG_MOUNT_POINT, MAXIMUM_REPARSE_DATA_BUFFER_SIZE};
 
@@ -31,7 +31,7 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     // canonicalize the path first.
     let mut target = helpers::get_full_path(target)?;
     fs::create_dir(junction)?;
-    let handle = helpers::open_reparse_point(junction, true)?;
+    let file = helpers::open_reparse_point(junction, true)?;
     // "\??\" + target
     let len = NON_INTERPRETED_PATH_PREFIX.len().saturating_add(target.len());
     // Len without `UNICODE_NULL` at the end
@@ -75,22 +75,22 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
         (*rdb).reparse_data_length.wrapping_add(REPARSE_DATA_BUFFER_HEADER_SIZE)
     };
 
-    helpers::set_reparse_point(*handle, rdb, u32::from(in_buffer_size))
+    helpers::set_reparse_point(file.as_raw_handle(), rdb, u32::from(in_buffer_size))
 }
 
 pub fn delete(junction: &Path) -> io::Result<()> {
-    let handle = helpers::open_reparse_point(junction, true)?;
-    helpers::delete_reparse_point(*handle)
+    let file = helpers::open_reparse_point(junction, true)?;
+    helpers::delete_reparse_point(file.as_raw_handle())
 }
 
 pub fn exists(junction: &Path) -> io::Result<bool> {
     if !junction.exists() {
         return Ok(false);
     }
-    let handle = helpers::open_reparse_point(junction, false)?;
+    let file = helpers::open_reparse_point(junction, false)?;
     // Allocate enough space to fit the maximum sized reparse data buffer
     let mut data = [0u8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize];
-    let rdb = helpers::get_reparse_data_point(*handle, &mut data)?;
+    let rdb = helpers::get_reparse_data_point(file.as_raw_handle(), &mut data)?;
     // The reparse tag indicates if this is a junction or not
     Ok(rdb.reparse_tag == IO_REPARSE_TAG_MOUNT_POINT)
 }
@@ -99,9 +99,9 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
     if !junction.exists() {
         return Err(io::Error::new(io::ErrorKind::NotFound, "`junction` does not exist"));
     }
-    let handle = helpers::open_reparse_point(junction, false).expect("just panic");
+    let file = helpers::open_reparse_point(junction, false).expect("just panic");
     let mut data = [0u8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize];
-    let rdb = helpers::get_reparse_data_point(*handle, &mut data)?;
+    let rdb = helpers::get_reparse_data_point(file.as_raw_handle(), &mut data)?;
     if rdb.reparse_tag == IO_REPARSE_TAG_MOUNT_POINT {
         let offset = rdb.reparse_buffer.substitute_name_offset / WCHAR_SIZE;
         let len = rdb.reparse_buffer.substitute_name_length / WCHAR_SIZE;
