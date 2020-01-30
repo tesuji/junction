@@ -25,9 +25,7 @@ jobs:
             archive: i686-6.3.0-release-posix-dwarf-rt_v5-rev2.7z
             mingw_dir: mingw32
     steps:
-      - uses: actions/checkout@v1
-        with:
-          fetch-depth: 1
+      - uses: actions/checkout@v2
       - run: bash ci/install-rustup.bash
       - run: bash ci/install-rust.bash stable-${{ matrix.target }}
       - name: Check out MinGW toolchain
@@ -39,7 +37,6 @@ jobs:
           echo "##[add-path]C:\mingw\${{ matrix.mingw_dir }}\bin"
         shell: bash
         if: matrix.mingw_dir
-      - run: cargo fetch
       - run: cargo build
       - run: cargo build --all-targets
       - run: cargo test
@@ -59,9 +56,7 @@ jobs:
     runs-on: windows-latest
     if: github.event_name != 'pull_request' && github.event.ref == 'refs/heads/master'
     steps:
-      - uses: actions/checkout@v1
-        with:
-          fetch-depth: 1
+      - uses: actions/checkout@v2
       - run: bash ci/install-rustup.bash
       - run: bash ci/install-rust.bash stable
       - run: cargo doc --all --no-deps # --document-private-items
@@ -74,9 +69,7 @@ jobs:
   rustfmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-        with:
-          fetch-depth: 1
+      - uses: actions/checkout@v2
       - run: bash ci/install-rustup.bash
       - run: bash ci/install-rust.bash stable
       - run: rustup component add rustfmt
@@ -86,9 +79,7 @@ jobs:
     runs-on: windows-latest
     needs: [build]
     steps:
-      - uses: actions/checkout@v1
-        with:
-          fetch-depth: 1
+      - uses: actions/checkout@v2
       - run: bash ci/install-rustup.bash beta
       - run: bash ci/install-rust.bash beta
       - run: rustup component add clippy

@@ -8,8 +8,7 @@
 set -e
 
 # Install/update rustup.
-RUSTUP_MINOR_VER=$(rustup -V 2> /dev/null | grep -o -E '1\.[0-9]{2}' | cut -d . -f2)
-if [[ $RUSTUP_MINOR_VER -ge 20 ]]; then
+if command -v rustup > /dev/null; then
     echo "$(rustup -V)" already installed
     rustup set profile minimal
 else
