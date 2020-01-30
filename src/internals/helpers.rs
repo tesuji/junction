@@ -38,18 +38,23 @@ static SE_BACKUP_NAME: [u16; 18] = [
 ];
 
 pub fn open_reparse_point(reparse_point: &Path, rdwr: bool) -> io::Result<File> {
-    // Obtain privilege in case we don't have it yet
-    set_privilege(rdwr)?;
     let access = if rdwr {
         GENERIC_READ | GENERIC_WRITE
     } else {
         GENERIC_READ
     };
-    OpenOptions::new()
-        .access_mode(access)
+    let mut opts = OpenOptions::new();
+    opts.access_mode(access)
         .share_mode(0)
-        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS)
-        .open(reparse_point)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS);
+    match opts.open(reparse_point) {
+        Err(e) if e.kind() == io::ErrorKind::PermissionDenied => {
+            // Obtain privilege in case we don't have it yet
+            set_privilege(rdwr)?;
+            opts.open(reparse_point)
+        }
+        other => other,
+    }
 }
 
 fn set_privilege(rdwr: bool) -> io::Result<()> {
