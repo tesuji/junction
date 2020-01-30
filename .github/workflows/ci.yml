@@ -27,7 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: bash ci/install-rustup.bash
+        shell: bash
       - run: bash ci/install-rust.bash stable-${{ matrix.target }}
+        shell: bash
       - name: Check out MinGW toolchain
         run: |
           set -x
@@ -58,10 +60,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: bash ci/install-rustup.bash
+        shell: bash
       - run: bash ci/install-rust.bash stable
+        shell: bash
       - run: cargo doc --all --no-deps # --document-private-items
       - run: echo '<meta http-equiv=refresh content=0;url=junction/index.html>' > target/doc/index.html
       - run: bash ./ci/ghpages-deploy.sh
+        shell: bash
         env:
           ENCRYPTED_KEY: ${{ secrets.ENCRYPTED_KEY }}
           ENCRYPTED_IV: ${{ secrets.ENCRYPTED_IV }}
@@ -81,7 +86,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: bash ci/install-rustup.bash beta
+        shell: bash
       - run: bash ci/install-rust.bash beta
+        shell: bash
       - run: rustup component add clippy
       - run: |
           cargo check --all --all-targets
