@@ -99,7 +99,7 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
     if !junction.exists() {
         return Err(io::Error::new(io::ErrorKind::NotFound, "`junction` does not exist"));
     }
-    let file = helpers::open_reparse_point(junction, false).expect("just panic");
+    let file = helpers::open_reparse_point(junction, false)?;
     let mut data = [0u8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize];
     let rdb = helpers::get_reparse_data_point(file.as_raw_handle(), &mut data)?;
     if rdb.reparse_tag == IO_REPARSE_TAG_MOUNT_POINT {
