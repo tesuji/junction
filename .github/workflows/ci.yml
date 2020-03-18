@@ -65,6 +65,10 @@ jobs:
         shell: bash
       - run: cargo doc --all --no-deps # --document-private-items
       - run: echo '<meta http-equiv=refresh content=0;url=junction/index.html>' > target/doc/index.html
+      - run: |
+          Get-Service ssh-agent
+          Set-Service ssh-agent -StartupType Manual
+        shell: powershell
       - run: bash ./ci/ghpages-deploy.sh
         shell: bash
         env:
