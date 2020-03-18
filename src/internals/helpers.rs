@@ -103,10 +103,7 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
     }
 }
 
-pub fn get_reparse_data_point<'a>(
-    handle: HANDLE,
-    data: &'a mut [u8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize],
-) -> io::Result<&'a ReparseDataBuffer> {
+pub fn get_reparse_data_point<'a>(handle: HANDLE, data: &'a mut [u8]) -> io::Result<&'a ReparseDataBuffer> {
     // Redefine the above char array into a ReparseDataBuffer we can work with
     #[warn(clippy::cast_ptr_alignment)]
     let rdb = data.as_mut_ptr().cast::<ReparseDataBuffer>();
