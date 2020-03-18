@@ -17,7 +17,7 @@ repository = "https://github.com/lzutao/junction"
 description = "library for working with NTFS junctions"
 
 [package.metadata.docs.rs]
-default-target = "x86_64-pc-windows-msvc"
+targets = ["x86_64-pc-windows-msvc"]
 
 [target.'cfg(windows)'.dependencies.scopeguard]
 version = "1"
