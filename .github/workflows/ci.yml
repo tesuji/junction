@@ -67,6 +67,7 @@ jobs:
       - run: echo '<meta http-equiv=refresh content=0;url=junction/index.html>' > target/doc/index.html
       - run: |
           Get-Service ssh-agent
+          Get-Service ssh-agent | Select StartType
           Set-Service ssh-agent -StartupType Manual
         shell: powershell
       - run: bash ./ci/ghpages-deploy.sh
