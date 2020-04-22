@@ -124,7 +124,7 @@ pub fn get_reparse_data_point<'a>(handle: HANDLE, data: &'a mut [u8]) -> io::Res
     {
         return Err(io::Error::last_os_error());
     }
-    Ok({ unsafe { &*rdb } })
+    Ok(unsafe { &*rdb })
 }
 
 pub fn set_reparse_point(handle: HANDLE, rdb: *mut ReparseDataBuffer, len: u32) -> io::Result<()> {
