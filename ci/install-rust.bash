@@ -8,7 +8,6 @@ if [[ -z "$1" ]]; then
 fi
 TOOLCHAIN="$1"
 
-rustup component remove --toolchain="$TOOLCHAIN" rust-docs || echo "already removed"
 rustup default "$TOOLCHAIN"
 rustup update --no-self-update "$TOOLCHAIN"
 if [[ -n $2 ]]; then
