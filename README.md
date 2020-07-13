@@ -33,4 +33,4 @@ junction = "0.1"
 ## License
 
 All the code in this repository is released under the MIT License,
-for more information read COPYRIGHT file.
+for more information, please read COPYRIGHT file.

@@ -13,7 +13,7 @@ jobs:
     env:
       # RUSTFLAGS: -Ctarget-feature=+crt-static
       RUST_BACKTRACE: 1
-      MINGW_URL: https://rust-lang-ci2.s3.amazonaws.com/rust-ci-mirror
+      MINGW_URL: https://ci-mirrors.rust-lang.org/rustc
     strategy:
       matrix:
         target: [x86_64-pc-windows-msvc, i686-pc-windows-msvc, x86_64-pc-windows-gnu, i686-pc-windows-gnu]
@@ -26,10 +26,9 @@ jobs:
             mingw_dir: mingw32
     steps:
       - uses: actions/checkout@v2
-      - run: rustup set profile minimal
-        shell: bash
-      - run: bash ci/install-rust.bash stable-${{ matrix.target }}
-        shell: bash
+      - run: |
+          rustup toolchain install stable-${{ matrix.target }}
+          rustup default stable-${{ matrix.target }}
       - name: Check out MinGW toolchain
         run: |
           set -x
@@ -54,49 +53,55 @@ jobs:
           dir /aL C:\Users
         shell: cmd
 
-  rustdoc:
-    runs-on: windows-latest
-    if: github.event_name != 'pull_request' && github.event.ref == 'refs/heads/master'
-    steps:
-      - uses: actions/checkout@v2
-      - run: rustup set profile minimal
-        shell: bash
-      - run: bash ci/install-rust.bash stable
-        shell: bash
-      - run: cargo doc --all --no-deps # --document-private-items
-      - run: echo '<meta http-equiv=refresh content=0;url=junction/index.html>' > target/doc/index.html
-      - run: |
-          Get-Service ssh-agent
-          Get-Service ssh-agent | Select StartType
-          Set-Service ssh-agent -StartupType Manual
-        shell: powershell
-      - run: bash ./ci/ghpages-deploy.sh
-        shell: bash
-        env:
-          ENCRYPTED_KEY: ${{ secrets.ENCRYPTED_KEY }}
-          ENCRYPTED_IV: ${{ secrets.ENCRYPTED_IV }}
-
   rustfmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: rustup set profile minimal
-      - run: bash ci/install-rust.bash stable
-      - run: rustup component add rustfmt
       - run: cargo fmt -- --check
+
+  rustdoc:
+    runs-on: windows-latest
+    if: github.event_name != 'pull_request' && github.event.ref == 'refs/heads/master'
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          rustup toolchain install nightly
+          rustup default nightly
+      - run: cargo doc --all --no-deps # --document-private-items
+      - run: echo '<meta http-equiv=refresh content=0;url=junction/index.html>' > target/doc/index.html
+      # - run: |
+      #     Get-Service ssh-agent
+      #     Get-Service ssh-agent | Select StartType
+      #     Set-Service ssh-agent -StartupType Manual
+      #   shell: powershell
+      - name: Commit docs to gh-pages branch
+        working-directory: target/doc
+        run: |
+          # Bypassing Jekyll on GitHub Pages
+          touch .nojekyll
+          REV=$(git rev-parse --short HEAD)
+          git init
+          git remote add upstream https://x-access-token:${{secrets.GITHUB_TOKEN}}@github.com/lzutao/junction
+          git config user.name "Actions"
+          git config user.email "Actions@example.com"
+          git add -A .
+          git commit -qm "Documentation for ${{github.repository}}@${REV}"
+        shell: bash
+      - name: Push gh-pages to GitHub
+        working-directory: target/doc
+        run: |
+          git push -q upstream HEAD:gh-pages --force
 
   clippy:
     runs-on: windows-latest
     needs: [build]
     steps:
       - uses: actions/checkout@v2
-      - run: rustup set profile minimal
-        shell: bash
-      - run: bash ci/install-rust.bash beta
-        shell: bash
-      - run: rustup component add clippy
       - run: |
-          cargo check --all --all-targets
+          rustup toolchain install nightly -c clippy
+          rustup default nightly
+      - run: |
+          cargo check --all-targets --all-features
           git ls-files '*.rs' | xargs touch
-        shell: bash
-      - run: cargo clippy --all --all-targets -- -D clippy::nursery -Dwarnings
+      - run: cargo clippy --all-targets --all-features -- -Dwarnings
