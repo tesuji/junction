@@ -1,3 +1,6 @@
+#[macro_use]
+mod utf16;
+
 use super::types::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE;
 use super::types::{ReparseDataBuffer, ReparseGuidDataBuffer};
 
@@ -22,20 +25,8 @@ use winapi::um::winbase::{FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POI
 use winapi::um::winioctl::{FSCTL_DELETE_REPARSE_POINT, FSCTL_GET_REPARSE_POINT, FSCTL_SET_REPARSE_POINT};
 use winapi::um::winnt::*;
 
-#[rustfmt::skip]
-static SE_RESTORE_NAME: [u16; 19] = [
-    b'S' as u16, b'e' as _,
-    b'R' as _, b'e' as _, b's' as _, b't' as _, b'o' as _, b'r' as _, b'e' as _,
-    b'P' as _, b'r' as _, b'i' as _, b'v' as _, b'i' as _, b'l' as _, b'e' as _, b'g' as _, b'e' as _,
-    0,
-];
-#[rustfmt::skip]
-static SE_BACKUP_NAME: [u16; 18] = [
-    b'S' as u16, b'e' as _,
-    b'B' as _, b'a' as _, b'c' as _, b'k' as _, b'u' as _, b'p' as _,
-    b'P' as _, b'r' as _, b'i' as _, b'v' as _, b'i' as _, b'l' as _, b'e' as _, b'g' as _, b'e' as _,
-    0,
-];
+pub static SE_RESTORE_NAME: [u16; 19] = utf16s!(b"SeRestorePrivilege\0");
+pub static SE_BACKUP_NAME: [u16; 18] = utf16s!(b"SeBackupPrivilege\0");
 
 pub fn open_reparse_point(reparse_point: &Path, rdwr: bool) -> io::Result<File> {
     let access = if rdwr {
