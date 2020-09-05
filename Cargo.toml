@@ -1,12 +1,12 @@
 [package]
 name = "junction"
-version = "0.1.5" # Also update `html_root_url` in lib.rs
+version = "0.2.0" # Also update `html_root_url` in lib.rs
 authors = ["Lzu Tao <taolzu@gmail.com>"]
 categories = ["api-bindings", "os::windows-apis"]
 documentation = "https://docs.rs/junction/*/x86_64-pc-windows-msvc/junction/"
 edition = "2018"
 exclude = [
-    "/ci/*",
+    "/.github",
     "/HOW-TO-RELEASE.md",
     "/azure-pipelines.yml",
 ]

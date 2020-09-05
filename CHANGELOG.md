@@ -24,26 +24,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Removed` for now removed features.
 * `Fixed` for any bug fixes.
 * `Security` in case of vulnerabilities.
- -->
-## [0.1.5] - 2020-03-18
+-->
+
+## [v0.2.0] - 2020-09-05
+### Changed
+* Some internal refactorings that requires Rust v1.46.0
+
+## [v0.1.5] - 2020-03-18
 ### Fixed
 * Prevent a panic happen when open a reparse point (Commit fd9bbec6061fb100f79795ac9b64db59fbb6a3c0)
 
-## [0.1.4] - 2020-01-30
+## [v0.1.4] - 2020-01-30
 ### Changed
 * Ask for forgiveness in case we have no necessary permission
   instead of always asking for permission.
 
-## [0.1.3] - 2019-10-28
+## [v0.1.3] - 2019-10-28
 ### Changed
 * Obtain appropriate privilege before opening directories.
 
-## [0.1.0] - 2019-05-15
+## [v0.1.0] - 2019-05-15
 
 First release
 
-[0.2.0]: https://github.com/lzutao/junction/compare/v0.1.0...v0.2.0
-[0.1.5]: https://github.com/lzutao/junction/compare/v0.1.4...v0.1.5
-[0.1.4]: https://github.com/lzutao/junction/compare/v0.1.3...v0.1.4
-[0.1.3]: https://github.com/lzutao/junction/compare/v0.1.0...v0.1.3
-[0.1.0]: https://github.com/lzutao/junction/releases/tag/v0.1.0
+[v0.2.0]: https://github.com/lzutao/junction/compare/v0.1.0...v0.2.0
+[v0.1.5]: https://github.com/lzutao/junction/compare/v0.1.4...v0.1.5
+[v0.1.4]: https://github.com/lzutao/junction/compare/v0.1.3...v0.1.4
+[v0.1.3]: https://github.com/lzutao/junction/compare/v0.1.0...v0.1.3
+[v0.1.0]: https://github.com/lzutao/junction/releases/tag/v0.1.0

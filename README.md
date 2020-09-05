@@ -6,19 +6,9 @@ Library for working with NTFS junctions.
 [![Documentation](https://docs.rs/junction/badge.svg)](https://docs.rs/junction)
 [![Crates.io](https://img.shields.io/crates/v/junction.svg)](https://crates.io/crates/junction)
 
-## Usage
+### Supported Rust versions
 
-Tested in Rust version: Lastest stable
-
-Add this to your `Cargo.toml`:
-
-```toml
-[dependencies]
-junction = "0.1"
-```
-
-[actions-badge]: https://github.com/lzutao/junction/workflows/Rust/badge.svg?branchName=master
-[actions-url]: https://github.com/lzutao/junction/actions
+Latest stable
 
 ## All relevant references
 
@@ -34,3 +24,6 @@ junction = "0.1"
 
 All the code in this repository is released under the MIT License,
 for more information, please read COPYRIGHT file.
+
+[actions-badge]: https://github.com/lzutao/junction/workflows/Rust/badge.svg?branchName=master
+[actions-url]: https://github.com/lzutao/junction/actions
