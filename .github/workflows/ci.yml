@@ -83,7 +83,7 @@ jobs:
           REV=$(git rev-parse --short HEAD)
           git init
           git config user.name "Actions"
-          git config user.email "Actions@example.com"
+          git config user.email ""
           git config --global core.autocrlf false
           git add -A .
           git commit -qm "Documentation for ${{github.repository}}@${REV}"
@@ -91,7 +91,7 @@ jobs:
       - name: Push gh-pages to GitHub
         working-directory: target/doc
         run: |
-          git remote add upstream https://x-access-token:${{secrets.GITHUB_TOKEN}}@github.com/lzutao/junction
+          git remote add upstream https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git push -q upstream HEAD:gh-pages --force
 
   clippy:
