@@ -85,7 +85,9 @@ jobs:
           git config user.name "Actions"
           git config user.email ""
           git config --global core.autocrlf false
+          git config --global core.eol lf
           git add -A .
+          git add --renormalize .
           git commit -qm "Documentation for ${{github.repository}}@${REV}"
         shell: bash
       - name: Push gh-pages to GitHub
