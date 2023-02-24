@@ -166,28 +166,12 @@ fn os_str_to_utf16(s: &OsStr) -> Vec<u16> {
     s.encode_wide().chain(std::iter::once(0)).collect()
 }
 
-// Many Windows APIs follow a pattern of where we hand a buffer and then they
-// will report back to us how large the buffer should be or how many bytes
-// currently reside in the buffer. This function is an abstraction over these
-// functions by making them easier to call.
-//
-// The first callback, `f1`, is yielded a (pointer, len) pair which can be
-// passed to a syscall. The `ptr` is valid for `len` items (u16 in this case).
-// The closure is expected to return what the syscall returns which will be
-// interpreted by this function to determine if the syscall needs to be invoked
-// again (with more buffer space).
-//
-// Once the syscall has completed (errors bail out early) the second closure is
-// yielded the data which has been read from the syscall. The return value
-// from this closure is then the return value of the function.
-//
-// Taken from rust-lang/rust/src/libstd/sys/windows/mod.rs#L106
-fn fill_utf16_buf<F1, F2, T>(mut f1: F1, f2: F2) -> io::Result<T>
-where
-    F1: FnMut(*mut u16, u32) -> u32,
-    F2: FnOnce(&[u16]) -> T,
-{
-    type MaybeU16 = MaybeUninit<u16>;
+type MaybeU16 = MaybeUninit<u16>;
+// Returns the len of buf when success.
+// Ref: <rust-lang/rust/src/libstd/sys/windows/mod.rs#L106>.
+pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
+    let path = os_str_to_utf16(target.as_os_str());
+    let file_part = ptr::null_mut();
     const U16_UNINIT: MaybeU16 = MaybeU16::uninit();
     const ERROR_INSUFFICIENT_BUFFER: u32 = 122;
     // Start off with a stack buf but then spill over to the heap if we end up
@@ -215,47 +199,34 @@ where
                 &mut heap_buf[..]
             };
 
-            // This function is typically called on windows API functions which
-            // will return the correct length of the string, but these functions
-            // also return the `0` on error. In some cases, however, the
-            // returned "correct length" may actually be 0!
-            //
-            // To handle this case we call `SetLastError` to reset it to 0 and
-            // then check it again if we get the "0 error value". If the "last
-            // error" is still 0 then we interpret it as a 0 length buffer and
-            // not an actual error.
             SetLastError(0);
-            let k = match f1(buf.as_mut_ptr().cast::<u16>(), n as u32) {
-                0 if GetLastError() == 0 => 0,
-                0 => return Err(io::Error::last_os_error()),
-                n => n,
-            } as usize;
-            if k == n && GetLastError() == ERROR_INSUFFICIENT_BUFFER {
+            let k = GetFullPathNameW(
+                path.as_ptr().cast::<u16>(),
+                n as u32,
+                maybe_slice_to_ptr(buf),
+                file_part,
+            ) as usize;
+            if k == 0 {
+                return Err(crate::io::Error::last_os_error());
+            }
+            if GetLastError() == ERROR_INSUFFICIENT_BUFFER {
                 n = n.saturating_mul(2).min(u32::MAX as usize);
             } else if k > n {
                 n = k;
-            } else if k == n {
-                // It is impossible to reach this point.
-                // On success, k is the returned string length excluding the null.
-                // On failure, k is the required buffer length including the null.
-                // Therefore k never equals n.
-                unreachable!();
             } else {
                 // Safety: First `k` values are initialized.
-                // * `MaybeUninit<T>` and T are guaranteed to have the same layout
-                let slice: &[u16] = &*(&buf[..k] as *const [MaybeU16] as *const [u16]);
-                return Ok(f2(slice));
+                let slice: &[u16] = maybe_slice_assume_init(&buf[..k]);
+                return Ok(slice.into());
             }
         }
     }
 }
 
-pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
-    let path = os_str_to_utf16(target.as_os_str());
-    let file_part: *mut u16 = ptr::null_mut();
-    #[warn(clippy::cast_ptr_alignment)]
-    fill_utf16_buf(
-        |buf, sz| unsafe { GetFullPathNameW(path.as_ptr(), sz, buf, file_part.cast()) },
-        |buf| buf.into(),
-    )
+unsafe fn maybe_slice_to_ptr(s: &mut [MaybeU16]) -> *mut u16 {
+    s.as_mut_ptr() as *mut u16
+}
+
+unsafe fn maybe_slice_assume_init(s: &[MaybeU16]) -> &[u16] {
+    // SAFETY: `MaybeUninit<T>` and T are guaranteed to have the same layout
+    &*(s as *const [MaybeU16] as *const [u16])
 }
