@@ -94,10 +94,7 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
     }
 }
 
-pub fn get_reparse_data_point<'a>(handle: HANDLE, data: &'a mut [u8]) -> io::Result<&'a ReparseDataBuffer> {
-    // Redefine the above char array into a ReparseDataBuffer we can work with
-    #[warn(clippy::cast_ptr_alignment)]
-    let rdb = data.as_mut_ptr().cast::<ReparseDataBuffer>();
+pub fn get_reparse_data_point(handle: HANDLE, rdb: *mut ReparseDataBuffer) -> io::Result<()> {
     // Call DeviceIoControl to get the reparse point data
     let mut bytes_returned: u32 = 0;
     if unsafe {
@@ -115,7 +112,7 @@ pub fn get_reparse_data_point<'a>(handle: HANDLE, data: &'a mut [u8]) -> io::Res
     {
         return Err(io::Error::last_os_error());
     }
-    Ok(unsafe { &*rdb })
+    Ok(())
 }
 
 pub fn set_reparse_point(handle: HANDLE, rdb: *mut ReparseDataBuffer, len: u32) -> io::Result<()> {
