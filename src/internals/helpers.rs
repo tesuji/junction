@@ -7,7 +7,7 @@ use super::types::{ReparseDataBuffer, ReparseGuidDataBuffer};
 use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};
 use std::io;
-use std::mem;
+use std::mem::{self, MaybeUninit};
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::fs::OpenOptionsExt;
 use std::path::Path;
@@ -187,11 +187,17 @@ where
     F1: FnMut(*mut u16, u32) -> u32,
     F2: FnOnce(&[u16]) -> T,
 {
+    type MaybeU16 = MaybeUninit<u16>;
+    const U16_UNINIT: MaybeU16 = MaybeU16::uninit();
     const ERROR_INSUFFICIENT_BUFFER: u32 = 122;
     // Start off with a stack buf but then spill over to the heap if we end up
     // needing more space.
-    let mut stack_buf = [0u16; 512];
-    let mut heap_buf = Vec::new();
+    //
+    // This initial size also works around `GetFullPathNameW` returning
+    // incorrect size hints for some short paths:
+    // https://github.com/dylni/normpath/issues/5
+    let mut stack_buf: [MaybeU16; 512] = [U16_UNINIT; 512];
+    let mut heap_buf: Vec<MaybeU16> = Vec::new();
     unsafe {
         let mut n = stack_buf.len();
         loop {
@@ -200,6 +206,11 @@ where
             } else {
                 let extra = n - heap_buf.len();
                 heap_buf.reserve(extra);
+                // We used `reserve` and not `reserve_exact`, so in theory we
+                // may have gotten more than requested. If so, we'd like to use
+                // it... so long as we won't cause overflow.
+                n = heap_buf.capacity().min(u32::MAX as usize);
+                // Safety: MaybeUninit<u16> does not need initialization
                 heap_buf.set_len(n);
                 &mut heap_buf[..]
             };
@@ -214,17 +225,26 @@ where
             // error" is still 0 then we interpret it as a 0 length buffer and
             // not an actual error.
             SetLastError(0);
-            let k = match f1(buf.as_mut_ptr(), n as u32) {
+            let k = match f1(buf.as_mut_ptr().cast::<u16>(), n as u32) {
                 0 if GetLastError() == 0 => 0,
                 0 => return Err(io::Error::last_os_error()),
                 n => n,
             } as usize;
             if k == n && GetLastError() == ERROR_INSUFFICIENT_BUFFER {
-                n *= 2;
-            } else if k >= n {
+                n = n.saturating_mul(2).min(u32::MAX as usize);
+            } else if k > n {
                 n = k;
+            } else if k == n {
+                // It is impossible to reach this point.
+                // On success, k is the returned string length excluding the null.
+                // On failure, k is the required buffer length including the null.
+                // Therefore k never equals n.
+                unreachable!();
             } else {
-                return Ok(f2(&buf[..k]));
+                // Safety: First `k` values are initialized.
+                // * `MaybeUninit<T>` and T are guaranteed to have the same layout
+                let slice: &[u16] = &*(&buf[..k] as *const [MaybeU16] as *const [u16]);
+                return Ok(f2(slice));
             }
         }
     }
