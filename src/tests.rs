@@ -1,16 +1,41 @@
 use std::fs::{self, File};
 use std::io::{self, Write};
 use std::os::windows::fs::symlink_file;
+#[cfg(miri)]
+use std::path::{Path, PathBuf};
+
+#[cfg(not(miri))]
+use tempfile::TempDir;
+
+#[cfg(miri)]
+struct TempDir {
+    path: PathBuf,
+}
+
+#[cfg(miri)]
+impl TempDir {
+    fn path(&self) -> &Path {
+        self.path.as_path()
+    }
+}
 
 // https://docs.microsoft.com/en-us/windows/desktop/debug/system-error-codes
 const ERROR_NOT_A_REPARSE_POINT: i32 = 0x1126;
 const ERROR_ALREADY_EXISTS: i32 = 0xb7;
 
-fn create_tempdir() -> tempfile::TempDir {
+#[cfg(not(miri))]
+fn create_tempdir() -> TempDir {
     tempfile::Builder::new()
         .prefix("junction-test-")
         .tempdir_in("target/debug")
         .unwrap()
+}
+
+#[cfg(miri)]
+fn create_tempdir() -> TempDir {
+    TempDir {
+        path: PathBuf::from("target/debug/junction-test"),
+    }
 }
 
 #[test]

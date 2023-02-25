@@ -15,6 +15,8 @@ jobs:
       RUST_BACKTRACE: 1
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
       MINGW_URL: https://ci-mirrors.rust-lang.org/rustc
+      RUSTC_TOOLCHAIN: nightly-2023-02-25
+      MIRIFLAGS: -Zmiri-disable-isolation
     strategy:
       matrix:
         target: [x86_64-pc-windows-msvc, i686-pc-windows-msvc, x86_64-pc-windows-gnu, i686-pc-windows-gnu]
@@ -28,8 +30,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: |
-          rustup toolchain install nightly-2023-02-25-${{ matrix.target }}
-          rustup default nightly-2023-02-25-${{ matrix.target }}
+          echo "${RUST_TOOLCHAIN}"
+          rustup toolchain install "nightly-2023-02-25-${{ matrix.target }}"
+          rustup default "nightly-2023-02-25-${{ matrix.target }}"
       - name: Check out MinGW toolchain
         run: |
           set -x
@@ -42,6 +45,13 @@ jobs:
       - run: cargo build
       - run: cargo build --all-targets
       - run: cargo test
+      # miri still needs to support more Windows API shims
+      - if: false
+        run: |
+          rustup component add miri
+          cargo clean
+          cargo miri setup
+          cargo miri test
       - if: failure()
         run: |
           Set-PSDebug -Trace 1
