@@ -6,15 +6,6 @@ use std::os::windows::fs::symlink_file;
 const ERROR_NOT_A_REPARSE_POINT: i32 = 0x1126;
 const ERROR_ALREADY_EXISTS: i32 = 0xb7;
 
-macro_rules! check {
-    ($e:expr) => {
-        match $e {
-            Ok(t) => t,
-            Err(e) => panic!("{} failed with: {}", stringify!($e), e),
-        }
-    };
-}
-
 fn create_tempdir() -> tempfile::TempDir {
     tempfile::Builder::new()
         .prefix("junction-test-")
@@ -32,8 +23,8 @@ fn create_dir_all_with_junctions() {
 
     fs::create_dir_all(&target).unwrap();
 
-    check!(super::create(&target, &junction));
-    check!(fs::create_dir_all(&b));
+    super::create(&target, &junction).unwrap();
+    fs::create_dir_all(&b).unwrap();
     // the junction itself is not a directory, but `is_dir()` on a Path
     // follows links
     assert!(junction.is_dir());
@@ -49,14 +40,14 @@ fn create_recursive_rmdir() {
     let d2 = tmpdir.path().join("d2"); // "d2"
     let canary = d2.join("do_not_delete"); // "d2/do_not_delete"
 
-    check!(fs::create_dir_all(&dtt));
-    check!(fs::create_dir_all(&d2));
-    check!(check!(File::create(&canary)).write_all(b"foo"));
+    fs::create_dir_all(&dtt).unwrap();
+    fs::create_dir_all(&d2).unwrap();
+    File::create(&canary).unwrap().write_all(b"foo").unwrap();
 
-    check!(super::create(&d2, &dt.join("d2"))); // "d1/t/d2" -> "d2"
+    super::create(&d2, &dt.join("d2")).unwrap(); // "d1/t/d2" -> "d2"
 
     let _ = symlink_file(&canary, &d1.join("canary")); // d1/canary -> d2/do_not_delete
-    check!(fs::remove_dir_all(&d1));
+    fs::remove_dir_all(&d1).unwrap();
 
     assert!(!d1.is_dir());
     assert!(canary.exists());
@@ -69,10 +60,10 @@ fn create_recursive_rmdir_of_symlink() {
     let link = tmpdir.path().join("link");
     let dir = tmpdir.path().join("dir");
     let canary = dir.join("do_not_delete");
-    check!(fs::create_dir_all(&dir));
-    check!(check!(File::create(&canary)).write_all(b"foo"));
-    check!(super::create(&dir, &link));
-    check!(fs::remove_dir_all(&link));
+    fs::create_dir_all(&dir).unwrap();
+    File::create(&canary).unwrap().write_all(b"foo").unwrap();
+    super::create(&dir, &link).unwrap();
+    fs::remove_dir_all(&link).unwrap();
 
     assert!(!link.is_dir());
     assert!(canary.exists());
@@ -85,7 +76,7 @@ fn create_directory_exist_before() {
     let target = tmpdir.path().join("target");
     let junction = tmpdir.path().join("junction");
 
-    check!(fs::create_dir_all(&junction));
+    fs::create_dir_all(&junction).unwrap();
 
     match super::create(&target, &junction) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_ALREADY_EXISTS) => {}
@@ -117,14 +108,14 @@ fn delete_junctions() {
     }
 
     let dir_not_junction = tmpdir.path().join("dir_not_junction");
-    check!(fs::create_dir_all(&dir_not_junction));
+    fs::create_dir_all(&dir_not_junction).unwrap();
     match super::delete(&dir_not_junction) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
         _ => panic!("target path is not a junction point"),
     }
 
     let file = tmpdir.path().join("foo-file");
-    check!(check!(File::create(&file)).write_all(b"foo"));
+    File::create(&file).unwrap().write_all(b"foo").unwrap();
     match super::delete(&file) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
         _ => panic!("target path is not a junction point"),
@@ -137,11 +128,11 @@ fn exists_verify() {
 
     // Check no such directory or file
     let no_such_dir = tmpdir.path().join("no_such_dir");
-    assert_eq!(check!(super::exists(&no_such_dir)), false);
+    assert!(!super::exists(&no_such_dir).unwrap());
 
     // Target exists but not a junction
     let no_such_file = tmpdir.path().join("file");
-    check!(check!(File::create(&no_such_file)).write_all(b"foo"));
+    File::create(&no_such_file).unwrap().write_all(b"foo").unwrap();
     match super::exists(&no_such_file) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
         _ => panic!("target exists but not a junction"),
@@ -152,21 +143,21 @@ fn exists_verify() {
     let file = target.join("file");
     let junction_file = junction.join("file");
 
-    check!(fs::create_dir_all(&target));
-    check!(check!(File::create(&file)).write_all(b"foo"));
+    fs::create_dir_all(&target).unwrap();
+    File::create(&file).unwrap().write_all(b"foo").unwrap();
 
     assert!(
         !junction_file.exists(),
         "file should not be located until junction created"
     );
-    assert_eq!(check!(super::exists(&junction)), false, "junction not created yet");
+    assert!(!super::exists(&junction).unwrap(), "junction not created yet");
 
-    check!(super::create(&target, &junction));
-    assert_eq!(check!(super::exists(&junction)), true, "junction should exist now");
-    assert_eq!(&check!(super::get_target(&junction)), &target);
+    super::create(&target, &junction).unwrap();
+    assert!(super::exists(&junction).unwrap(), "junction should exist now");
+    assert_eq!(&super::get_target(&junction).unwrap(), &target);
     assert!(junction_file.exists(), "file should be accessible via the junction");
 
-    check!(super::delete(&junction));
+    super::delete(&junction).unwrap();
     match super::exists(&junction) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
         _ => panic!("junction had been deleted"),
@@ -182,12 +173,12 @@ fn exists_verify() {
 fn get_target_user_dirs() {
     // junction
     assert_eq!(
-        check!(super::get_target(r"C:\Users\Default User")).to_str(),
+        super::get_target(r"C:\Users\Default User").unwrap().to_str(),
         Some(r"C:\Users\Default"),
     );
     // junction with special permissions
     assert_eq!(
-        check!(super::get_target(r"C:\Documents and Settings\")).to_str(),
+        super::get_target(r"C:\Documents and Settings\").unwrap().to_str(),
         Some(r"C:\Users"),
     );
 
@@ -200,14 +191,14 @@ fn get_target_user_dirs() {
     }
 
     let dir_not_junction = tmpdir.path().join("dir_not_junction");
-    check!(fs::create_dir_all(&dir_not_junction));
+    fs::create_dir_all(&dir_not_junction).unwrap();
     match super::get_target(&dir_not_junction) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
         _ => panic!("target path is not a junction point"),
     }
 
     let file = tmpdir.path().join("foo-file");
-    check!(check!(File::create(&file)).write_all(b"foo"));
+    File::create(&file).unwrap().write_all(b"foo").unwrap();
     match super::get_target(&file) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
         _ => panic!("target path is not a junction point"),
