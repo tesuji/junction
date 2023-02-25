@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Security` in case of vulnerabilities.
 -->
 
+## [v0.2.1] - 2023-02-25
+### Fixed
+* Fix weird build failure when cross-compiling from non-Windows hosts
+  657c176a440a64437236ba9d88a2ebd98a8babb1
+
 ## [v0.2.0] - 2020-09-05
 ### Changed
 * Some internal refactorings that requires Rust v1.46.0

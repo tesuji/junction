@@ -10,7 +10,7 @@ if the directory `D:\SYMLINK` specified `C:\WINNT\SYSTEM32` as its target, then
 an application accessing `D:\SYMLINK\DRIVERS` would in reality be accessing
 `C:\WINNT\SYSTEM32\DRIVERS`.
 */
-#![doc(html_root_url = "https://docs.rs/junction/0.2.0")]
+#![doc(html_root_url = "https://docs.rs/junction/0.2.1")]
 #![cfg(windows)]
 #![deny(rust_2018_idioms)]
 
