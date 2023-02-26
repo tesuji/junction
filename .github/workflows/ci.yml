@@ -82,7 +82,7 @@ jobs:
           rustup run ${{ env.SPARSE_TOOLCHAIN }} cargo update
           rustup run ${{ env.SPARSE_TOOLCHAIN }} cargo fetch
       - run: |
-          cargo build --all-targets
+          cargo build --all-targets --offline
       - run: |
           cargo test
 
