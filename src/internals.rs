@@ -14,14 +14,14 @@ use std::{io, os::windows::io::AsRawHandle};
 
 use winapi::um::winnt::{IO_REPARSE_TAG_MOUNT_POINT, MAXIMUM_REPARSE_DATA_BUFFER_SIZE};
 
+// makes sure layout of RawHandle and winapi's HANDLE are the same
+// for pointer casts between them.
 const _: () = {
-    use std::mem::{align_of, size_of};
-    let std_size = size_of::<std::os::windows::io::RawHandle>();
-    let winapi_size = size_of::<winapi::um::winnt::HANDLE>();
-    let std_align = align_of::<std::os::windows::io::RawHandle>();
-    let winapi_align = align_of::<winapi::um::winnt::HANDLE>();
-    assert!(std_size == winapi_size);
-    assert!(std_align == winapi_align);
+    use std::alloc::Layout;
+    let std_layout = Layout::new::<std::os::windows::io::RawHandle>();
+    let winapi_layout = Layout::new::<winapi::um::winnt::HANDLE>();
+    assert!(std_layout.size() == winapi_layout.size());
+    assert!(std_layout.align() == winapi_layout.align());
 };
 
 /// This prefix indicates to NTFS that the path is to be treated as a non-interpreted
@@ -95,6 +95,7 @@ pub fn delete(junction: &Path) -> io::Result<()> {
     helpers::delete_reparse_point(file.as_raw_handle().cast())
 }
 
+// Makes sure `align(ReparseDataBuffer) == 4` for struct `AlignAs` to be sound.
 const _: () = {
     const A: usize = std::mem::align_of::<ReparseDataBuffer>();
     if A != 4 {
@@ -133,6 +134,7 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
     };
     let rdb = data.value.as_mut_ptr().cast::<ReparseDataBuffer>();
     helpers::get_reparse_data_point(file.as_raw_handle().cast(), rdb)?;
+    // SAFETY: rdb should be initialized now
     let rdb = unsafe { &*rdb };
     if rdb.reparse_tag == IO_REPARSE_TAG_MOUNT_POINT {
         let offset = rdb.reparse_buffer.substitute_name_offset / WCHAR_SIZE;

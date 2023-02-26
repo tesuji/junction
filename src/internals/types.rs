@@ -1,11 +1,14 @@
 use winapi::shared::guiddef;
 
+// NOTE: to use `size_of` operator, below structs should be packed.
 /// Reparse Data Buffer header size = `sizeof(u32) + 2 * sizeof(u16)`
 pub const REPARSE_DATA_BUFFER_HEADER_SIZE: u16 = 8;
 /// Reparse GUID Data Buffer header size = `sizeof(u32) + 2*sizeof(u16) + sizeof(GUID)`
 pub const REPARSE_GUID_DATA_BUFFER_HEADER_SIZE: u16 = 24;
 /// MountPointReparseBuffer header size = `4 * sizeof(u16)`
 pub const MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE: u16 = 8;
+
+type VarLenArr<T> = [T; 1];
 
 #[repr(C)]
 #[derive(Debug)]
@@ -27,7 +30,7 @@ pub struct MountPointReparseBuffer {
     /// can appear in any order in the path_buffer. (To locate the substitute name and print name
     /// strings in the path_buffer, use the `substitute_name_offset`, `substitute_name_length`,
     /// `print_name_offset`, and `print_name_length` members.)
-    pub path_buffer: [u16; 1],
+    pub path_buffer: VarLenArr<u16>,
 }
 
 /// This structure contains reparse point data for a Microsoft reparse point.
@@ -52,7 +55,7 @@ pub struct ReparseDataBuffer {
 #[derive(Debug)]
 pub struct GenericReparseBuffer {
     /// Microsoft-defined data for the reparse point.
-    pub data_buffer: [u8; 1],
+    pub data_buffer: VarLenArr<u8>,
 }
 
 /// Used by all third-party layered drivers to store data for a reparse point.
@@ -60,7 +63,7 @@ pub struct GenericReparseBuffer {
 /// Each reparse point contains one instance of a `ReparseGuidDataBuffer` structure.
 ///
 /// Read more:
-/// * https://docs.microsoft.com/en-us/windows/desktop/api/winnt/ns-winnt-_reparse_guid_data_buffer
+/// * <https://docs.microsoft.com/en-us/windows/desktop/api/winnt/ns-winnt-_reparse_guid_data_buffer>
 #[repr(C)]
 pub struct ReparseGuidDataBuffer {
     /// Reparse point tag. This member identifies the structure of the user-defined
