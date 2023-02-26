@@ -8,7 +8,7 @@ Library for working with NTFS junctions.
 
 ### Minimal Supported Rust versions
 
-1.48.0
+1.51.0
 
 ## All relevant references
 
