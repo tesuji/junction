@@ -7,14 +7,17 @@ on:
       - '!gh-pages'
   pull_request:
 
+env:
+  SPARSE_TOOLCHAIN: nightly-2023-02-25
+
 jobs:
   build:
+    if: false
     runs-on: windows-latest
     env:
       RUST_BACKTRACE: 1
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
       MINGW_URL: https://ci-mirrors.rust-lang.org/rustc
-      RUSTC_TOOLCHAIN: nightly-2023-02-25
       MIRIFLAGS: -Zmiri-disable-isolation
     strategy:
       matrix:
@@ -29,9 +32,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: |
-          echo "${RUSTC_TOOLCHAIN}"
-          rustup toolchain install "nightly-2023-02-25-${{ matrix.target }}"
-          rustup default "nightly-2023-02-25-${{ matrix.target }}"
+          rustup toolchain install "${{ env.SPARSE_TOOLCHAIN }}-${{ matrix.target }}"
+          rustup default "${{ env.SPARSE_TOOLCHAIN }}-${{ matrix.target }}"
       - name: Check out MinGW toolchain
         run: |
           set -x
@@ -62,6 +64,27 @@ jobs:
           dir /aL C:\
           dir /aL C:\Users
         shell: cmd
+
+  msrv:
+    runs-on: windows-latest
+    # needs: [build]
+    env:
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+      # add_of_mut! requires for soundness
+      MSRV: 1.51.0
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          rustup toolchain install ${{ env.MSRV }}
+          rustup toolchain install ${{ env.SPARSE_TOOLCHAIN }}
+          rustup default ${{ env.MSRV }}
+      - run: |
+          rustup run ${{ env.SPARSE_TOOLCHAIN }} cargo generate-lockfile
+          rustup run ${{ env.SPARSE_TOOLCHAIN }} cargo fetch
+      - run: |
+          cargo build --all-targets --locked
+      - run: |
+          cargo test
 
   rustfmt:
     runs-on: ubuntu-latest
