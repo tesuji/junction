@@ -20,8 +20,9 @@ const _: () = {
     use std::alloc::Layout;
     let std_layout = Layout::new::<std::os::windows::io::RawHandle>();
     let winapi_layout = Layout::new::<winapi::um::winnt::HANDLE>();
-    assert!(std_layout.size() == winapi_layout.size());
-    assert!(std_layout.align() == winapi_layout.align());
+    // MSVR(Rust v1.57): use assert! instead
+    [(); 1][!(std_layout.size() == winapi_layout.size()) as usize];
+    [(); 1][!(std_layout.align() == winapi_layout.align()) as usize];
 };
 
 /// This prefix indicates to NTFS that the path is to be treated as a non-interpreted

@@ -69,6 +69,7 @@ jobs:
     # needs: [build]
     env:
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+      # add_of_mut! requires for soundness
       MSRV: 1.51.0
     steps:
       - uses: actions/checkout@v3
