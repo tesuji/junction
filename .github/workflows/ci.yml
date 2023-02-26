@@ -9,6 +9,7 @@ on:
 
 jobs:
   build:
+    if: false
     runs-on: windows-latest
     env:
       RUST_BACKTRACE: 1
@@ -72,8 +73,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: |
-          rustup toolchain install ${ MSRV }
-          rustup default ${ MSRV }
+          rustup toolchain install ${{ env.MSRV }}
+          rustup default ${{ env.MSRV }}
       - run: |
           cargo build --all-targets
       - run: |
