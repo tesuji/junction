@@ -79,7 +79,7 @@ jobs:
           rustup toolchain install ${{ env.SPARSE_TOOLCHAIN }}
           rustup default ${{ env.MSRV }}
       - run: |
-          rustup run ${{ env.SPARSE_TOOLCHAIN }} cargo update
+          rustup run ${{ env.SPARSE_TOOLCHAIN }} cargo generate-lockfile
           rustup run ${{ env.SPARSE_TOOLCHAIN }} cargo fetch
       - run: |
           cargo build --all-targets --offline
