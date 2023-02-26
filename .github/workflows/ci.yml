@@ -12,7 +12,6 @@ env:
 
 jobs:
   build:
-    if: false
     runs-on: windows-latest
     env:
       RUST_BACKTRACE: 1
