@@ -6,9 +6,9 @@ Library for working with NTFS junctions.
 [![Documentation](https://docs.rs/junction/badge.svg)](https://docs.rs/junction)
 [![Crates.io](https://img.shields.io/crates/v/junction.svg)](https://crates.io/crates/junction)
 
-### Supported Rust versions
+### Minimal Supported Rust versions
 
-Latest stable
+1.48.0
 
 ## All relevant references
 

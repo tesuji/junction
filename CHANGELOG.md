@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Security` in case of vulnerabilities.
 -->
 
+## [v1.0.0] - 2023-02-26
+### First major version
+The public API of this crate has been unchanged around 3 years without complains.
+It signals that the API is mature enough to be stable for a long time.
+
 ## [v0.2.1] - 2023-02-25
 ### Fixed
 * Fix weird build failure when cross-compiling from non-Windows hosts
@@ -52,6 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First release
 
+[v1.0.0]: https://github.com/lzutao/junction/compare/v0.2.1...v1.0.0
+[v0.2.1]: https://github.com/lzutao/junction/compare/v0.2.0...v0.2.1
 [v0.2.0]: https://github.com/lzutao/junction/compare/v0.1.0...v0.2.0
 [v0.1.5]: https://github.com/lzutao/junction/compare/v0.1.4...v0.1.5
 [v0.1.4]: https://github.com/lzutao/junction/compare/v0.1.3...v0.1.4
