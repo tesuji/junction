@@ -44,14 +44,16 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     let file = helpers::open_reparse_point(junction, true)?;
     // "\??\" + target
     let len = NON_INTERPRETED_PATH_PREFIX.len().saturating_add(target.len());
-    let min_len = cmp::min(len, u16::MAX as usize) as u16;
-    // Len without `UNICODE_NULL` at the end
-    let target_len_in_bytes = min_len.saturating_mul(WCHAR_SIZE);
-    // Check if `target_wchar.len()` may lead to a buffer overflow.
-    if target_len_in_bytes > MAX_AVAILABLE_PATH_BUFFER {
-        return Err(io::Error::new(io::ErrorKind::Other, "`target` is too long"));
-    }
-
+    let target_len_in_bytes = {
+        let min_len = cmp::min(len, u16::MAX as usize) as u16;
+        // Len without `UNICODE_NULL` at the end
+        let target_len_in_bytes = min_len.saturating_mul(WCHAR_SIZE);
+        // Check if `target_wchar.len()` may lead to a buffer overflow.
+        if target_len_in_bytes > MAX_AVAILABLE_PATH_BUFFER {
+            return Err(io::Error::new(io::ErrorKind::Other, "`target` is too long"));
+        }
+        target_len_in_bytes
+    };
     let mut target_wchar: Vec<u16> = Vec::with_capacity(len);
     target_wchar.extend(&NON_INTERPRETED_PATH_PREFIX);
     target_wchar.append(&mut target);
