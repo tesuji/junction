@@ -82,7 +82,7 @@ jobs:
           rustup run ${{ env.SPARSE_TOOLCHAIN }} cargo generate-lockfile
           rustup run ${{ env.SPARSE_TOOLCHAIN }} cargo fetch
       - run: |
-          cargo build --all-targets --offline
+          cargo build --all-targets --locked
       - run: |
           cargo test
 
