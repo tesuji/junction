@@ -141,14 +141,12 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
     if rdb.reparse_tag == IO_REPARSE_TAG_MOUNT_POINT {
         let offset = rdb.reparse_buffer.substitute_name_offset / WCHAR_SIZE;
         let len = rdb.reparse_buffer.substitute_name_length / WCHAR_SIZE;
-        let mut wide = unsafe {
+        let wide = unsafe {
             let buf = rdb.reparse_buffer.path_buffer.as_ptr().add(offset as usize);
             slice::from_raw_parts(buf, len as usize)
         };
         // In case of "\??\C:\foo\bar"
-        if wide.starts_with(&NON_INTERPRETED_PATH_PREFIX) {
-            wide = &wide[(NON_INTERPRETED_PATH_PREFIX.len())..];
-        }
+        let wide = wide.strip_prefix(&NON_INTERPRETED_PATH_PREFIX).unwrap_or(wide);
         Ok(PathBuf::from(OsString::from_wide(wide)))
     } else {
         Err(io::Error::new(io::ErrorKind::Other, "not a reparse tag mount point"))
