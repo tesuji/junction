@@ -45,10 +45,10 @@ jobs:
 
           # Environment variable setup, put these in your `.bashrc`
           export RUDRA_RUST_CHANNEL=${{ env.MSRV }}
-          export RUDRA_RUNNER_HOME="$USERPROFILE/rudra-home"
+          export RUDRA_RUNNER_HOME="${{ env.USERPROFILE }}/rudra-home"
           ./setup_rudra_runner_home.py ${RUDRA_RUNNER_HOME}
 
-          RUDRA_LIB=${USERPROFILE}/.rustup/toolchains/${RUDRA_RUST_CHANNEL}-x86_64-unknown-linux-gnu/lib
+          RUDRA_LIB=${{ env.USERPROFILE }}/.rustup/toolchains/${RUDRA_RUST_CHANNEL}-x86_64-unknown-linux-gnu/lib
           export RUSTFLAGS="-L ${RUDRA_LIB}"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${RUDRA_LIB}"
 
