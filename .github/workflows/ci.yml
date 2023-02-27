@@ -24,7 +24,18 @@ jobs:
         with:
           repository: sslab-gatech/Rudra
           path: Rudra
-      - run: |
+      - name: docker
+        run: |
+          docker build . -t rudra:latest
+        working-directory: Rudra
+      - name: ok
+        run: |
+          export RUDRA_RUNNER_HOME=${USERPROFILE}/rudra-home
+          python setup_rudra_runner_home.py ${RUDRA_RUNNER_HOME}
+        working-directory: Rudra
+      - name: setup
+        if: false
+        run: |
           # Toolchain setup
           rustup install ${{ env.MSRV }}
           rustup default ${{ env.MSRV }}
