@@ -18,18 +18,33 @@ jobs:
       MSRV: nightly-2021-08-20
     steps:
       - uses: actions/checkout@v3
+        with:
+          path: junction
+      - uses: actions/checkout@v3
+        with:
+          repository: sslab-gatech/Rudra
+          path: Rudra
       - run: |
-          rustup toolchain install ${{ env.MSRV }}
-          rustup toolchain install ${{ env.SPARSE_TOOLCHAIN }}
+          # Toolchain setup
+          rustup install ${{ env.MSRV }}
           rustup default ${{ env.MSRV }}
+          rustup component add rustc-dev
+          rustup component add miri
+
+          # Environment variable setup, put these in your `.bashrc`
+          export RUDRA_RUST_CHANNEL=${{ env.MSRV }}
+          export RUDRA_RUNNER_HOME="<your runner home path - use setup_rudra_runner_home.py>"
+
+          RUDRA_LIB=${USERPROFILE}/.rustup/toolchains/${RUDRA_RUST_CHANNEL}-x86_64-unknown-linux-gnu/lib
+          export RUSTFLAGS="-L ${RUDRA_LIB}"
+          export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${RUDRA_LIB}"
+
+          # Test your installation
+          python test.py
+        shell: bash
+        working-directory: Rudra
       - run: |
-          rustup run ${{ env.SPARSE_TOOLCHAIN }} cargo generate-lockfile
-          rustup run ${{ env.SPARSE_TOOLCHAIN }} cargo fetch
-      - run: |
-          cargo build --all-targets --locked
-      - name: Rudra
-        uses: sslab-gatech/Rudra@master
-      - run: cargo rudra
+          cargo build --all-targets
       - run: |
           cargo test
 
