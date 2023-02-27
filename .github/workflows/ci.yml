@@ -25,17 +25,6 @@ jobs:
         with:
           repository: sslab-gatech/Rudra
           path: Rudra
-      # - name: docker
-      #   run: |
-      #     docker build . -t rudra:latest
-      #   working-directory: Rudra
-      # - name: ok
-      #   run: |
-      #     RUDRA_RUNNER_HOME=${USERPROFILE}/rudra-home
-      #     ./setup_rudra_runner_home.py ${RUDRA_RUNNER_HOME}
-      #     echo "RUDRA_RUNNER_HOME=${RUDRA_RUNNER_HOME}" >> $GITHUB_ENV
-      #   working-directory: Rudra
-      #   shell: bash
       - name: setup
         shell: bash
         run: |
@@ -66,8 +55,9 @@ jobs:
       - run: |
           # for single file testing (you need to set library include path, or use `cargo run` instead)
           # rudra --crate-type lib tests/unsafe_destructor/normal1.rs
-          cargo rudra --target ${{ env.WIN_TARGET }} # for crate compilation
+          cargo rudra --target ${{ env.WIN_TARGET }} --all-targets # for crate compilation
         working-directory: junction
+
   build:
     # FIXME remove me
     if: false
