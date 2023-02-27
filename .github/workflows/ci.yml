@@ -29,6 +29,7 @@ jobs:
           cargo build --all-targets --locked
       - name: Rudra
         uses: sslab-gatech/Rudra@master
+      - run: cargo rudra
       - run: |
           cargo test
 
