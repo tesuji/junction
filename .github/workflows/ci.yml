@@ -12,10 +12,11 @@ env:
 
 jobs:
   rudra:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     env:
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
       MSRV: nightly-2021-08-20
+      WIN_TARGET: x86_64-pc-windows-gnu
     steps:
       - uses: actions/checkout@v3
         with:
@@ -24,41 +25,50 @@ jobs:
         with:
           repository: sslab-gatech/Rudra
           path: Rudra
-      - name: docker
-        run: |
-          docker build . -t rudra:latest
-        working-directory: Rudra
-      - name: ok
-        run: |
-          export RUDRA_RUNNER_HOME=${USERPROFILE}/rudra-home
-          python setup_rudra_runner_home.py ${RUDRA_RUNNER_HOME}
-        working-directory: Rudra
+      # - name: docker
+      #   run: |
+      #     docker build . -t rudra:latest
+      #   working-directory: Rudra
+      # - name: ok
+      #   run: |
+      #     RUDRA_RUNNER_HOME=${USERPROFILE}/rudra-home
+      #     ./setup_rudra_runner_home.py ${RUDRA_RUNNER_HOME}
+      #     echo "RUDRA_RUNNER_HOME=${RUDRA_RUNNER_HOME}" >> $GITHUB_ENV
+      #   working-directory: Rudra
+      #   shell: bash
       - name: setup
-        if: false
         run: |
           # Toolchain setup
-          rustup install ${{ env.MSRV }}
+          rustup toolchain install ${{ env.MSRV }} -c rustc-dev -c miri
           rustup default ${{ env.MSRV }}
-          rustup component add rustc-dev
-          rustup component add miri
+          rustup target add ${{ env.WIN_TARGET }}
 
           # Environment variable setup, put these in your `.bashrc`
           export RUDRA_RUST_CHANNEL=${{ env.MSRV }}
-          export RUDRA_RUNNER_HOME="<your runner home path - use setup_rudra_runner_home.py>"
+          export RUDRA_RUNNER_HOME="$USERPROFILE/rudra-home"
+          ./setup_rudra_runner_home.py ${RUDRA_RUNNER_HOME}
 
           RUDRA_LIB=${USERPROFILE}/.rustup/toolchains/${RUDRA_RUST_CHANNEL}-x86_64-unknown-linux-gnu/lib
           export RUSTFLAGS="-L ${RUDRA_LIB}"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${RUDRA_LIB}"
 
-          # Test your installation
-          python test.py
+          echo "RUDRA_RUNNER_HOME=${RUDRA_RUNNER_HOME}" >> $GITHUB_ENV
+          echo "RUDRA_RUST_CHANNEL=${RUDRA_RUST_CHANNEL}" >> $GITHUB_ENV
+          echo "RUSTFLAGS=${RUSTFLAGS}" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}" >> $GITHUB_ENV
+
+        shell: bash
+        working-directory: Rudra
+      - name: run
+        run: |
+          ./install-release.sh
         shell: bash
         working-directory: Rudra
       - run: |
-          cargo build --all-targets
-      - run: |
-          cargo test
-
+          # for single file testing (you need to set library include path, or use `cargo run` instead)
+          # rudra --crate-type lib tests/unsafe_destructor/normal1.rs
+          cargo rudra --target ${{ env.WIN_TARGET }} # for crate compilation
+        working-directory: junction
   build:
     # FIXME remove me
     if: false
