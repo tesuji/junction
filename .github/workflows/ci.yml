@@ -11,7 +11,30 @@ env:
   SPARSE_TOOLCHAIN: nightly-2023-02-25
 
 jobs:
+  rudra:
+    runs-on: windows-latest
+    env:
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+      MSRV: nightly-2021-08-20
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          rustup toolchain install ${{ env.MSRV }}
+          rustup toolchain install ${{ env.SPARSE_TOOLCHAIN }}
+          rustup default ${{ env.MSRV }}
+      - run: |
+          rustup run ${{ env.SPARSE_TOOLCHAIN }} cargo generate-lockfile
+          rustup run ${{ env.SPARSE_TOOLCHAIN }} cargo fetch
+      - run: |
+          cargo build --all-targets --locked
+      - name: Rudra
+        uses: sslab-gatech/Rudra@master
+      - run: |
+          cargo test
+
   build:
+    # FIXME remove me
+    if: false
     runs-on: windows-latest
     env:
       RUST_BACKTRACE: 1
