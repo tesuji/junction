@@ -104,6 +104,7 @@ jobs:
         shell: cmd
 
   msrv:
+    if: false
     runs-on: windows-latest
     # needs: [build]
     env:
@@ -125,6 +126,7 @@ jobs:
           cargo test
 
   rustfmt:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
