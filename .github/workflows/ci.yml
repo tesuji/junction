@@ -37,6 +37,7 @@ jobs:
       #   working-directory: Rudra
       #   shell: bash
       - name: setup
+        shell: bash
         run: |
           # Toolchain setup
           rustup toolchain install ${{ env.MSRV }} -c rustc-dev -c miri
@@ -45,10 +46,10 @@ jobs:
 
           # Environment variable setup, put these in your `.bashrc`
           export RUDRA_RUST_CHANNEL=${{ env.MSRV }}
-          export RUDRA_RUNNER_HOME="${{ env.USERPROFILE }}/rudra-home"
+          export RUDRA_RUNNER_HOME="${{ env.HOME }}/rudra-home"
           ./setup_rudra_runner_home.py ${RUDRA_RUNNER_HOME}
 
-          RUDRA_LIB=${{ env.USERPROFILE }}/.rustup/toolchains/${RUDRA_RUST_CHANNEL}-x86_64-unknown-linux-gnu/lib
+          RUDRA_LIB=${{ env.HOME }}/.rustup/toolchains/${RUDRA_RUST_CHANNEL}-x86_64-unknown-linux-gnu/lib
           export RUSTFLAGS="-L ${RUDRA_LIB}"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${RUDRA_LIB}"
 
@@ -56,8 +57,6 @@ jobs:
           echo "RUDRA_RUST_CHANNEL=${RUDRA_RUST_CHANNEL}" >> $GITHUB_ENV
           echo "RUSTFLAGS=${RUSTFLAGS}" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}" >> $GITHUB_ENV
-
-        shell: bash
         working-directory: Rudra
       - name: run
         run: |
