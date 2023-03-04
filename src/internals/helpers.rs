@@ -1,8 +1,8 @@
-#[macro_use]
 mod utf16;
 
 use super::types::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE;
 use super::types::{ReparseDataBuffer, ReparseGuidDataBuffer};
+pub(crate) use utf16::utf16s;
 
 use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};

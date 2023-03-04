@@ -6,6 +6,7 @@ use types::{MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE, REPARSE_DATA_BUFFER_HEADER_S
 
 use std::cmp;
 use std::fs;
+use std::mem::{align_of, size_of, MaybeUninit};
 use std::path::{Path, PathBuf};
 use std::ptr;
 use std::slice;
@@ -14,7 +15,7 @@ use std::{io, os::windows::io::AsRawHandle};
 
 use winapi::um::winnt::{IO_REPARSE_TAG_MOUNT_POINT, MAXIMUM_REPARSE_DATA_BUFFER_SIZE};
 
-// makes sure layout of RawHandle and winapi's HANDLE are the same
+// Makes sure layout of RawHandle and winapi's HANDLE are the same
 // for pointer casts between them.
 const _: () = {
     use std::alloc::Layout;
@@ -27,8 +28,9 @@ const _: () = {
 
 /// This prefix indicates to NTFS that the path is to be treated as a non-interpreted
 /// path in the virtual file system.
-const NON_INTERPRETED_PATH_PREFIX: [u16; 4] = [b'\\' as u16, b'?' as _, b'?' as _, b'\\' as _];
-const WCHAR_SIZE: u16 = std::mem::size_of::<u16>() as _;
+const NON_INTERPRETED_PATH_PREFIX: [u16; 4] = helpers::utf16s!(br"\??\");
+
+const WCHAR_SIZE: u16 = size_of::<u16>() as _;
 
 pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     const UNICODE_NULL_SIZE: u16 = WCHAR_SIZE;
@@ -100,13 +102,13 @@ pub fn delete(junction: &Path) -> io::Result<()> {
 
 // Makes sure `align(ReparseDataBuffer) == 4` for struct `AlignAs` to be sound.
 const _: () = {
-    const A: usize = std::mem::align_of::<ReparseDataBuffer>();
+    const A: usize = align_of::<ReparseDataBuffer>();
     if A != 4 {
         let _ = [0; 0][A];
     }
 };
 
-type MaybeU8 = std::mem::MaybeUninit<u8>;
+type MaybeU8 = MaybeUninit<u8>;
 #[repr(align(4))]
 struct AlignAs {
     value: Vec<MaybeU8>,
