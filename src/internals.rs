@@ -17,6 +17,8 @@ use winapi::um::winnt::{IO_REPARSE_TAG_MOUNT_POINT, MAXIMUM_REPARSE_DATA_BUFFER_
 
 // Makes sure layout of RawHandle and winapi's HANDLE are the same
 // for pointer casts between them.
+// CLIPPY: nonsense suggestions for assert!
+#[allow(clippy::unnecessary_operation)]
 const _: () = {
     use std::alloc::Layout;
     let std_layout = Layout::new::<std::os::windows::io::RawHandle>();
