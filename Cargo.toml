@@ -8,7 +8,6 @@ edition = "2018"
 exclude = [
     "/.github",
     "/HOW-TO-RELEASE.md",
-    "/azure-pipelines.yml",
 ]
 keywords = ["junction", "symlink"]
 license = "MIT"
