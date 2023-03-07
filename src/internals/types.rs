@@ -88,17 +88,17 @@ pub struct ReparseGuidDataBuffer {
 
 impl std::fmt::Debug for ReparseGuidDataBuffer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let guiddef::GUID {
+            Data1,
+            Data2,
+            Data3,
+            Data4,
+        } = self.reparse_guid;
         f.debug_struct("ReparseGuidDataBuffer")
             .field("reparse_tag", &self.reparse_tag)
             .field("reparse_data_length", &self.reparse_data_length)
             .field("reserved", &self.reserved)
-            .field(
-                "reparse_guid",
-                &format_args!(
-                    "{}:{}:{}:{:?}",
-                    self.reparse_guid.Data1, self.reparse_guid.Data2, self.reparse_guid.Data3, self.reparse_guid.Data4,
-                ),
-            )
+            .field("reparse_guid", &format_args!("{Data1}:{Data2}:{Data3}:{Data4:?}"))
             .field("generic", &self.generic.data_buffer)
             .finish()
     }
