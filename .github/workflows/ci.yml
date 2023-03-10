@@ -139,7 +139,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
-      MSRV: nightly
+      MSRV: nightly-2023-03-08
       WIN_TARGET: x86_64-pc-windows-gnu
     steps:
       - uses: actions/checkout@v3
