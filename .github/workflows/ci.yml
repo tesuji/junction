@@ -156,7 +156,7 @@ jobs:
       - name: setup
         shell: bash
         run: |
-          cargo fetch  --locked --path ./checker
+          cargo fetch
           cargo install --locked --path ./checker
         working-directory: mirai
       - run: |
