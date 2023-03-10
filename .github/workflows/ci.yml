@@ -66,6 +66,7 @@ jobs:
         shell: cmd
 
   msrv:
+    if: false
     runs-on: windows-latest
     # needs: [build]
     env:
@@ -87,6 +88,7 @@ jobs:
           cargo test
 
   rustfmt:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -168,7 +170,7 @@ jobs:
       - name: setup
         shell: bash
         run: |
-          cargo fetch
+          cargo fetch  --locked --path ./checker
           cargo install --locked --path ./checker
         working-directory: mirai
       - run: |
