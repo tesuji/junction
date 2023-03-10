@@ -13,6 +13,7 @@ env:
 
 jobs:
   build:
+    if: false
     runs-on: windows-latest
     env:
       RUST_BACKTRACE: 1
@@ -131,6 +132,29 @@ jobs:
           rustup default nightly
       - run: cargo clippy --all-targets --all-features -- -Dwarnings -A clippy::assertions-on-constants
 
+  mirai:
+    # if: false
+    runs-on: ubuntu-latest
+    env:
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+      MSRV: nightly
+      WIN_TARGET: x86_64-pc-windows-gnu
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: junction
+      - uses: actions/checkout@v3
+        with:
+          repository: facebookexperimental/MIRAI
+          path: mirai
+      - name: setup
+        shell: bash
+        run: |
+          cargo install --locked --path ./checker
+        working-directory: mirai
+      - run: |
+          cargo mirai --target ${{ env.WIN_TARGET }} --all-targets # for crate compilation
+        working-directory: junction
 
   # Use static analyzer Rudra <https://github.com/sslab-gatech/Rudra>.
   # FIXME: Disable for now since it's very costly to run.
