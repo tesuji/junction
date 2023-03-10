@@ -147,9 +147,16 @@ jobs:
         with:
           repository: facebookexperimental/MIRAI
           path: mirai
+      - name: rustup
+        run: |
+          # Toolchain setup
+          rustup toolchain install ${{ env.MSRV }} -c rustc-dev -c miri
+          rustup default ${{ env.MSRV }}
+          rustup target add ${{ env.WIN_TARGET }}
       - name: setup
         shell: bash
         run: |
+          cargo fetch
           cargo install --locked --path ./checker
         working-directory: mirai
       - run: |
