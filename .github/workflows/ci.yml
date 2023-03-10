@@ -136,11 +136,10 @@ jobs:
 
   mirai:
     # if: false
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     env:
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
       MSRV: nightly-2023-03-08
-      WIN_TARGET: x86_64-pc-windows-gnu
     steps:
       - uses: actions/checkout@v3
         with:
@@ -152,9 +151,8 @@ jobs:
       - name: rustup
         run: |
           # Toolchain setup
-          rustup toolchain install ${{ env.MSRV }} -c rustc-dev -c miri
+          rustup toolchain install ${{ env.MSRV }} -c rustc-dev
           rustup default ${{ env.MSRV }}
-          rustup target add ${{ env.WIN_TARGET }}
       - name: setup
         shell: bash
         run: |
@@ -162,7 +160,7 @@ jobs:
           cargo install --locked --path ./checker
         working-directory: mirai
       - run: |
-          cargo mirai --target ${{ env.WIN_TARGET }} --all-targets # for crate compilation
+          cargo mirai --all-targets # for crate compilation
         working-directory: junction
 
   # Use static analyzer Rudra <https://github.com/sslab-gatech/Rudra>.
