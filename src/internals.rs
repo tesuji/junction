@@ -30,7 +30,7 @@ const _: () = {
 
 /// This prefix indicates to NTFS that the path is to be treated as a non-interpreted
 /// path in the virtual file system.
-const NON_INTERPRETED_PATH_PREFIX: [u16; 4] = helpers::utf16s!(br"\??\");
+const NON_INTERPRETED_PATH_PREFIX: [u16; 4] = helpers::utf16s(br"\??\");
 
 const WCHAR_SIZE: u16 = size_of::<u16>() as _;
 
