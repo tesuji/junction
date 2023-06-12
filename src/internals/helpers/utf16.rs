@@ -26,7 +26,7 @@ const fn ascii_to_utf16<const N: usize>(src: [u8; N]) -> [u16; N] {
 
 #[test]
 fn const_fn() {
-    const _: [u16; 9] = ascii_to_utf16(br"123412341");
+    const _: [u16; 9] = ascii_to_utf16(*br"123412341");
 }
 
 pub(crate) use utf16s;
