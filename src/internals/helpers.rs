@@ -25,8 +25,8 @@ use winapi::um::winbase::{FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POI
 use winapi::um::winioctl::{FSCTL_DELETE_REPARSE_POINT, FSCTL_GET_REPARSE_POINT, FSCTL_SET_REPARSE_POINT};
 use winapi::um::winnt::*;
 
-pub static SE_RESTORE_NAME: [u16; 19] = utf16s!(b"SeRestorePrivilege\0");
-pub static SE_BACKUP_NAME: [u16; 18] = utf16s!(b"SeBackupPrivilege\0");
+pub static SE_RESTORE_NAME: [u16; 19] = utf16s(b"SeRestorePrivilege\0");
+pub static SE_BACKUP_NAME: [u16; 18] = utf16s(b"SeBackupPrivilege\0");
 
 pub fn open_reparse_point(reparse_point: &Path, rdwr: bool) -> io::Result<File> {
     let access = if rdwr {

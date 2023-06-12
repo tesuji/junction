@@ -1,17 +1,10 @@
-// FIXME(const_generic)
 /// Convert ASCII bytes to UTF-16 sequences.
-macro_rules! utf16s {
-    ($src:literal) => {{
-        const SRC: &[u8] = $src;
-        const N: usize = SRC.len();
-        let mut i = 0;
-        let mut dst = [0u16; N];
-        while i < N {
-            dst[i] = SRC[i] as u16;
-            i += 1;
-        }
-        dst
-    }};
+pub const fn utf16s<const N: usize>(src: &'static [u8; N]) -> [u16; N] {
+    let mut dst = [0u16; N];
+    let mut i = 0;
+    while i < N {
+        dst[i] = src[i] as u16;
+        i += 1;
+    }
+    dst
 }
-
-pub(crate) use utf16s;
