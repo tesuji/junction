@@ -55,7 +55,7 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
         let target_len_in_bytes = min_len.saturating_mul(WCHAR_SIZE);
         // Check if `target_wchar.len()` may lead to a buffer overflow.
         if target_len_in_bytes > MAX_AVAILABLE_PATH_BUFFER {
-            return Err(io::Error::new(io::ErrorKind::Other, "`target` is too long"));
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "`target` is too long"));
         }
         target_len_in_bytes
     };
