@@ -15,7 +15,7 @@ macro_rules! utf16s {
 }
 
 const fn ascii_to_utf16<const N: usize>(src: [u8; N]) -> [u16; N] {
-    let dst = [0u16; N];
+    let mut dst = [0u16; N];
     let mut i = 0;
     while i < N {
         dst[i] = src[i] as u16;
