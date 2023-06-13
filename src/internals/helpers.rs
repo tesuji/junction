@@ -29,11 +29,7 @@ pub static SE_RESTORE_NAME: [u16; 19] = utf16s(b"SeRestorePrivilege\0");
 pub static SE_BACKUP_NAME: [u16; 18] = utf16s(b"SeBackupPrivilege\0");
 
 pub fn open_reparse_point(reparse_point: &Path, rdwr: bool) -> io::Result<File> {
-    let access = if rdwr {
-        GENERIC_READ | GENERIC_WRITE
-    } else {
-        GENERIC_READ
-    };
+    let access = GENERIC_READ | if rdwr { GENERIC_WRITE } else { 0 };
     let mut opts = OpenOptions::new();
     opts.access_mode(access)
         .share_mode(0)

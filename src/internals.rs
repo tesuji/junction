@@ -111,6 +111,7 @@ const _: () = {
 };
 
 type MaybeU8 = MaybeUninit<u8>;
+
 #[repr(align(4))]
 struct AlignAs {
     value: Vec<MaybeU8>,
@@ -132,6 +133,7 @@ pub fn exists(junction: &Path) -> io::Result<bool> {
 }
 
 pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
+    // MSRV(1.63): use Path::try_exists instead
     if !junction.exists() {
         return Err(io::Error::new(io::ErrorKind::NotFound, "`junction` does not exist"));
     }
