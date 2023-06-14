@@ -1,12 +1,15 @@
+mod cast;
 mod helpers;
 mod types;
 
+use cast::BytesAsReparseDataBuffer;
 use types::ReparseDataBuffer;
 use types::{MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE, REPARSE_DATA_BUFFER_HEADER_SIZE};
 
+use std::alloc::Layout;
 use std::cmp;
 use std::fs;
-use std::mem::{align_of, size_of, MaybeUninit};
+use std::mem::size_of;
 use std::path::{Path, PathBuf};
 use std::ptr;
 use std::slice;
@@ -20,7 +23,6 @@ use winapi::um::winnt::{IO_REPARSE_TAG_MOUNT_POINT, MAXIMUM_REPARSE_DATA_BUFFER_
 // CLIPPY: nonsense suggestions for assert!
 #[allow(clippy::unnecessary_operation)]
 const _: () = {
-    use std::alloc::Layout;
     let std_layout = Layout::new::<std::os::windows::io::RawHandle>();
     let winapi_layout = Layout::new::<winapi::um::winnt::HANDLE>();
     // MSVR(Rust v1.57): use assert! instead
@@ -64,10 +66,8 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     target_wchar.append(&mut target);
 
     // Redefine the above char array into a ReparseDataBuffer we can work with
-    let mut data = AlignAs {
-        value: Vec::with_capacity(MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize),
-    };
-    let rdb = data.value.as_mut_ptr().cast::<ReparseDataBuffer>();
+    let mut data = BytesAsReparseDataBuffer::new();
+    let rdb = data.as_mut_ptr();
     let in_buffer_size: u16 = unsafe {
         // Set the type of reparse point we are creating
         ptr::addr_of_mut!((*rdb).reparse_tag).write(IO_REPARSE_TAG_MOUNT_POINT);
@@ -102,31 +102,14 @@ pub fn delete(junction: &Path) -> io::Result<()> {
     helpers::delete_reparse_point(file.as_raw_handle().cast())
 }
 
-// Makes sure `align(ReparseDataBuffer) == 4` for struct `AlignAs` to be sound.
-const _: () = {
-    const A: usize = align_of::<ReparseDataBuffer>();
-    if A != 4 {
-        let _ = [0; 0][A];
-    }
-};
-
-type MaybeU8 = MaybeUninit<u8>;
-
-#[repr(align(4))]
-struct AlignAs {
-    value: Vec<MaybeU8>,
-}
-
 pub fn exists(junction: &Path) -> io::Result<bool> {
     if !junction.exists() {
         return Ok(false);
     }
     let file = helpers::open_reparse_point(junction, false)?;
     // Allocate enough space to fit the maximum sized reparse data buffer
-    let mut data = AlignAs {
-        value: Vec::with_capacity(MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize),
-    };
-    let rdb = data.value.as_mut_ptr().cast::<ReparseDataBuffer>();
+    let mut data = BytesAsReparseDataBuffer::new();
+    let rdb = data.as_mut_ptr();
     helpers::get_reparse_data_point(file.as_raw_handle().cast(), rdb)?;
     // The reparse tag indicates if this is a junction or not
     Ok(unsafe { (*rdb).reparse_tag } == IO_REPARSE_TAG_MOUNT_POINT)
@@ -138,10 +121,8 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
         return Err(io::Error::new(io::ErrorKind::NotFound, "`junction` does not exist"));
     }
     let file = helpers::open_reparse_point(junction, false)?;
-    let mut data = AlignAs {
-        value: Vec::with_capacity(MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize),
-    };
-    let rdb = data.value.as_mut_ptr().cast::<ReparseDataBuffer>();
+    let mut data = BytesAsReparseDataBuffer::new();
+    let rdb = data.as_mut_ptr();
     helpers::get_reparse_data_point(file.as_raw_handle().cast(), rdb)?;
     // SAFETY: rdb should be initialized now
     let rdb = unsafe { &*rdb };

@@ -141,7 +141,7 @@ pub fn delete_reparse_point(handle: HANDLE) -> io::Result<()> {
         DeviceIoControl(
             handle,
             FSCTL_DELETE_REPARSE_POINT,
-            (&mut rgdb as *mut ReparseGuidDataBuffer).cast(),
+            ptr::addr_of_mut!(rgdb).cast(),
             u32::from(REPARSE_GUID_DATA_BUFFER_HEADER_SIZE),
             ptr::null_mut(),
             0,
