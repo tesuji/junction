@@ -15,7 +15,7 @@ pub struct BytesAsReparseDataBuffer {
 const _: () = {
     let a = align_of::<BytesAsReparseDataBuffer>();
     let b = align_of::<ReparseDataBuffer>();
-    [0; 1][!(a % b == 0) as usize];
+    [(); 1][!((a % b) == 0) as usize]
 };
 
 impl BytesAsReparseDataBuffer {
