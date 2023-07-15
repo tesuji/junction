@@ -1,34 +1,17 @@
+mod c;
 mod cast;
 mod helpers;
 mod types;
 
-use cast::BytesAsReparseDataBuffer;
-use types::ReparseDataBuffer;
-use types::{MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE, REPARSE_DATA_BUFFER_HEADER_SIZE};
-
-use std::alloc::Layout;
-use std::cmp;
-use std::fs;
+use std::ffi::OsString;
 use std::mem::size_of;
+use std::os::windows::ffi::OsStringExt;
+use std::os::windows::io::AsRawHandle;
 use std::path::{Path, PathBuf};
-use std::ptr;
-use std::slice;
-use std::{ffi::OsString, os::windows::ffi::OsStringExt};
-use std::{io, os::windows::io::AsRawHandle};
+use std::{cmp, fs, io, ptr, slice};
 
-use winapi::um::winnt::{IO_REPARSE_TAG_MOUNT_POINT, MAXIMUM_REPARSE_DATA_BUFFER_SIZE};
-
-// Makes sure layout of RawHandle and winapi's HANDLE are the same
-// for pointer casts between them.
-// CLIPPY: nonsense suggestions for assert!
-#[allow(clippy::unnecessary_operation)]
-const _: () = {
-    let std_layout = Layout::new::<std::os::windows::io::RawHandle>();
-    let winapi_layout = Layout::new::<winapi::um::winnt::HANDLE>();
-    // MSVR(Rust v1.57): use assert! instead
-    [(); 1][!(std_layout.size() == winapi_layout.size()) as usize];
-    [(); 1][!(std_layout.align() == winapi_layout.align()) as usize];
-};
+use cast::BytesAsReparseDataBuffer;
+use types::{ReparseDataBuffer, MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE, REPARSE_DATA_BUFFER_HEADER_SIZE};
 
 /// This prefix indicates to NTFS that the path is to be treated as a non-interpreted
 /// path in the virtual file system.
@@ -38,7 +21,7 @@ const WCHAR_SIZE: u16 = size_of::<u16>() as _;
 
 pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     const UNICODE_NULL_SIZE: u16 = WCHAR_SIZE;
-    const MAX_AVAILABLE_PATH_BUFFER: u16 = MAXIMUM_REPARSE_DATA_BUFFER_SIZE as u16
+    const MAX_AVAILABLE_PATH_BUFFER: u16 = c::MAXIMUM_REPARSE_DATA_BUFFER_SIZE as u16
         - REPARSE_DATA_BUFFER_HEADER_SIZE
         - MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE
         - 2 * UNICODE_NULL_SIZE;
@@ -70,7 +53,7 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     let rdb = data.as_mut_ptr();
     let in_buffer_size: u16 = unsafe {
         // Set the type of reparse point we are creating
-        ptr::addr_of_mut!((*rdb).reparse_tag).write(IO_REPARSE_TAG_MOUNT_POINT);
+        ptr::addr_of_mut!((*rdb).reparse_tag).write(c::IO_REPARSE_TAG_MOUNT_POINT);
         ptr::addr_of_mut!((*rdb).reserved).write(0);
 
         // Copy the junction's target
@@ -94,12 +77,12 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
         size.wrapping_add(REPARSE_DATA_BUFFER_HEADER_SIZE)
     };
 
-    helpers::set_reparse_point(file.as_raw_handle().cast(), rdb, u32::from(in_buffer_size))
+    helpers::set_reparse_point(c::same_handle(file.as_raw_handle()), rdb, u32::from(in_buffer_size))
 }
 
 pub fn delete(junction: &Path) -> io::Result<()> {
     let file = helpers::open_reparse_point(junction, true)?;
-    helpers::delete_reparse_point(file.as_raw_handle().cast())
+    helpers::delete_reparse_point(c::same_handle(file.as_raw_handle()))
 }
 
 pub fn exists(junction: &Path) -> io::Result<bool> {
@@ -110,9 +93,9 @@ pub fn exists(junction: &Path) -> io::Result<bool> {
     // Allocate enough space to fit the maximum sized reparse data buffer
     let mut data = BytesAsReparseDataBuffer::new();
     let rdb = data.as_mut_ptr();
-    helpers::get_reparse_data_point(file.as_raw_handle().cast(), rdb)?;
+    helpers::get_reparse_data_point(c::same_handle(file.as_raw_handle()), rdb)?;
     // The reparse tag indicates if this is a junction or not
-    Ok(unsafe { (*rdb).reparse_tag } == IO_REPARSE_TAG_MOUNT_POINT)
+    Ok(unsafe { (*rdb).reparse_tag } == c::IO_REPARSE_TAG_MOUNT_POINT)
 }
 
 pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
@@ -123,10 +106,10 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
     let file = helpers::open_reparse_point(junction, false)?;
     let mut data = BytesAsReparseDataBuffer::new();
     let rdb = data.as_mut_ptr();
-    helpers::get_reparse_data_point(file.as_raw_handle().cast(), rdb)?;
+    helpers::get_reparse_data_point(c::same_handle(file.as_raw_handle()), rdb)?;
     // SAFETY: rdb should be initialized now
     let rdb = unsafe { &*rdb };
-    if rdb.reparse_tag == IO_REPARSE_TAG_MOUNT_POINT {
+    if rdb.reparse_tag == c::IO_REPARSE_TAG_MOUNT_POINT {
         let offset = rdb.reparse_buffer.substitute_name_offset / WCHAR_SIZE;
         let len = rdb.reparse_buffer.substitute_name_length / WCHAR_SIZE;
         let wide = unsafe {

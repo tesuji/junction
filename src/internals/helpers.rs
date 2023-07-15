@@ -1,39 +1,28 @@
 mod utf16;
 
-use super::types::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE;
-use super::types::{ReparseDataBuffer, ReparseGuidDataBuffer};
-pub(crate) use utf16::utf16s;
-
 use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};
-use std::io;
 use std::mem::{self, MaybeUninit};
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::fs::OpenOptionsExt;
 use std::path::Path;
-use std::ptr;
+use std::{io, ptr};
 
 use scopeguard::ScopeGuard;
-use winapi::um::errhandlingapi::{GetLastError, SetLastError};
-use winapi::um::fileapi::GetFullPathNameW;
-use winapi::um::handleapi::CloseHandle;
-use winapi::um::ioapiset::DeviceIoControl;
-use winapi::um::processthreadsapi::{GetCurrentProcess, OpenProcessToken};
-use winapi::um::securitybaseapi::AdjustTokenPrivileges;
-use winapi::um::winbase::LookupPrivilegeValueW;
-use winapi::um::winbase::{FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT};
-use winapi::um::winioctl::{FSCTL_DELETE_REPARSE_POINT, FSCTL_GET_REPARSE_POINT, FSCTL_SET_REPARSE_POINT};
-use winapi::um::winnt::*;
+pub(crate) use utf16::utf16s;
+
+use super::c;
+use super::types::{ReparseDataBuffer, ReparseGuidDataBuffer, REPARSE_GUID_DATA_BUFFER_HEADER_SIZE};
 
 pub static SE_RESTORE_NAME: [u16; 19] = utf16s(b"SeRestorePrivilege\0");
 pub static SE_BACKUP_NAME: [u16; 18] = utf16s(b"SeBackupPrivilege\0");
 
 pub fn open_reparse_point(reparse_point: &Path, rdwr: bool) -> io::Result<File> {
-    let access = GENERIC_READ | if rdwr { GENERIC_WRITE } else { 0 };
+    let access = c::GENERIC_READ | if rdwr { c::GENERIC_WRITE } else { 0 };
     let mut opts = OpenOptions::new();
     opts.access_mode(access)
         .share_mode(0)
-        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS);
+        .custom_flags(c::FILE_FLAG_OPEN_REPARSE_POINT | c::FILE_FLAG_BACKUP_SEMANTICS);
     match opts.open(reparse_point) {
         Err(e) if e.kind() == io::ErrorKind::PermissionDenied => {
             // Obtain privilege in case we don't have it yet
@@ -46,27 +35,28 @@ pub fn open_reparse_point(reparse_point: &Path, rdwr: bool) -> io::Result<File> 
 
 fn set_privilege(rdwr: bool) -> io::Result<()> {
     const ERROR_NOT_ALL_ASSIGNED: u32 = 1300;
-    const TOKEN_PRIVILEGES_SIZE: u32 = mem::size_of::<TOKEN_PRIVILEGES>() as _;
+    const TOKEN_PRIVILEGES_SIZE: u32 = mem::size_of::<c::TOKEN_PRIVILEGES>() as _;
     unsafe {
-        let mut handle = ptr::null_mut();
-        if OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &mut handle) == 0 {
+        let mut handle = <MaybeUninit<c::HANDLE>>::uninit();
+        if c::OpenProcessToken(c::GetCurrentProcess(), c::TOKEN_ADJUST_PRIVILEGES, handle.as_mut_ptr()) == 0 {
             return Err(io::Error::last_os_error());
         }
+        let handle = handle.assume_init();
         let handle = scopeguard::guard(handle, |h| {
-            CloseHandle(h);
+            c::CloseHandle(h);
         });
-        let mut tp: TOKEN_PRIVILEGES = mem::zeroed();
+        let mut tp: c::TOKEN_PRIVILEGES = mem::zeroed();
         let name = if rdwr {
             SE_RESTORE_NAME.as_ptr()
         } else {
             SE_BACKUP_NAME.as_ptr()
         };
-        if LookupPrivilegeValueW(ptr::null(), name, &mut tp.Privileges[0].Luid) == 0 {
+        if c::LookupPrivilegeValueW(ptr::null(), name, &mut tp.Privileges[0].Luid) == 0 {
             return Err(io::Error::last_os_error());
         }
         tp.PrivilegeCount = 1;
-        tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-        if AdjustTokenPrivileges(
+        tp.Privileges[0].Attributes = c::SE_PRIVILEGE_ENABLED;
+        if c::AdjustTokenPrivileges(
             *handle,
             0,
             &mut tp,
@@ -77,12 +67,12 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
         {
             return Err(io::Error::last_os_error());
         }
-        if GetLastError() == ERROR_NOT_ALL_ASSIGNED {
+        if c::GetLastError() == ERROR_NOT_ALL_ASSIGNED {
             return Err(io::Error::from_raw_os_error(ERROR_NOT_ALL_ASSIGNED as i32));
         }
 
         let handle = ScopeGuard::into_inner(handle);
-        if CloseHandle(handle) == 0 {
+        if c::CloseHandle(handle) == 0 {
             Err(io::Error::last_os_error())
         } else {
             Ok(())
@@ -90,17 +80,17 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
     }
 }
 
-pub fn get_reparse_data_point(handle: HANDLE, rdb: *mut ReparseDataBuffer) -> io::Result<()> {
+pub fn get_reparse_data_point(handle: c::HANDLE, rdb: *mut ReparseDataBuffer) -> io::Result<()> {
     // Call DeviceIoControl to get the reparse point data
     let mut bytes_returned: u32 = 0;
     if unsafe {
-        DeviceIoControl(
+        c::DeviceIoControl(
             handle,
-            FSCTL_GET_REPARSE_POINT,
+            c::FSCTL_GET_REPARSE_POINT,
             ptr::null_mut(),
             0,
             rdb.cast(),
-            MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
+            c::MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
             &mut bytes_returned,
             ptr::null_mut(),
         )
@@ -111,12 +101,12 @@ pub fn get_reparse_data_point(handle: HANDLE, rdb: *mut ReparseDataBuffer) -> io
     Ok(())
 }
 
-pub fn set_reparse_point(handle: HANDLE, rdb: *mut ReparseDataBuffer, len: u32) -> io::Result<()> {
+pub fn set_reparse_point(handle: c::HANDLE, rdb: *mut ReparseDataBuffer, len: u32) -> io::Result<()> {
     let mut bytes_returned: u32 = 0;
     if unsafe {
-        DeviceIoControl(
+        c::DeviceIoControl(
             handle,
-            FSCTL_SET_REPARSE_POINT,
+            c::FSCTL_SET_REPARSE_POINT,
             rdb.cast(),
             len,
             ptr::null_mut(),
@@ -132,15 +122,15 @@ pub fn set_reparse_point(handle: HANDLE, rdb: *mut ReparseDataBuffer, len: u32) 
 }
 
 // See https://msdn.microsoft.com/en-us/library/windows/desktop/aa364560(v=vs.85).aspx
-pub fn delete_reparse_point(handle: HANDLE) -> io::Result<()> {
+pub fn delete_reparse_point(handle: c::HANDLE) -> io::Result<()> {
     let mut rgdb: ReparseGuidDataBuffer = unsafe { mem::zeroed() };
-    rgdb.reparse_tag = IO_REPARSE_TAG_MOUNT_POINT;
+    rgdb.reparse_tag = c::IO_REPARSE_TAG_MOUNT_POINT;
     let mut bytes_returned: u32 = 0;
 
     if unsafe {
-        DeviceIoControl(
+        c::DeviceIoControl(
             handle,
-            FSCTL_DELETE_REPARSE_POINT,
+            c::FSCTL_DELETE_REPARSE_POINT,
             ptr::addr_of_mut!(rgdb).cast(),
             u32::from(REPARSE_GUID_DATA_BUFFER_HEADER_SIZE),
             ptr::null_mut(),
@@ -192,8 +182,8 @@ pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
                 &mut heap_buf[..]
             };
 
-            SetLastError(0);
-            let k = GetFullPathNameW(
+            c::SetLastError(0);
+            let k = c::GetFullPathNameW(
                 path.as_ptr().cast::<u16>(),
                 n as u32,
                 maybe_slice_to_ptr(buf),
@@ -202,7 +192,7 @@ pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
             if k == 0 {
                 return Err(crate::io::Error::last_os_error());
             }
-            if GetLastError() == ERROR_INSUFFICIENT_BUFFER {
+            if c::GetLastError() == ERROR_INSUFFICIENT_BUFFER {
                 n = n.saturating_mul(2).min(u32::MAX as usize);
             } else if k > n {
                 n = k;

@@ -1,9 +1,8 @@
-use crate::internals::ReparseDataBuffer;
-
 use std::alloc::{alloc, handle_alloc_error, Layout};
 use std::mem::align_of;
 
-use winapi::um::winnt::MAXIMUM_REPARSE_DATA_BUFFER_SIZE;
+use super::c::MAXIMUM_REPARSE_DATA_BUFFER_SIZE;
+use crate::internals::ReparseDataBuffer;
 
 type MaybeU8 = std::mem::MaybeUninit<u8>;
 
