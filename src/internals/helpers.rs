@@ -2,11 +2,12 @@ mod utf16;
 
 use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};
+use std::io;
 use std::mem::{self, MaybeUninit};
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::fs::OpenOptionsExt;
 use std::path::Path;
-use std::{io, ptr};
+use std::ptr::{addr_of_mut, null, null_mut};
 
 use scopeguard::ScopeGuard;
 pub(crate) use utf16::utf16s;
@@ -51,12 +52,12 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
         } else {
             SE_BACKUP_NAME.as_ptr()
         };
-        if c::LookupPrivilegeValueW(ptr::null(), name, &mut tp.Privileges[0].Luid) == 0 {
+        if c::LookupPrivilegeValueW(null(), name, &mut tp.Privileges[0].Luid) == 0 {
             return Err(io::Error::last_os_error());
         }
         tp.PrivilegeCount = 1;
         tp.Privileges[0].Attributes = c::SE_PRIVILEGE_ENABLED;
-        if c::AdjustTokenPrivileges(*handle, 0, &tp, TOKEN_PRIVILEGES_SIZE, ptr::null_mut(), ptr::null_mut()) == 0 {
+        if c::AdjustTokenPrivileges(*handle, 0, &tp, TOKEN_PRIVILEGES_SIZE, null_mut(), null_mut()) == 0 {
             return Err(io::Error::last_os_error());
         }
         if c::GetLastError() == ERROR_NOT_ALL_ASSIGNED {
@@ -79,12 +80,12 @@ pub fn get_reparse_data_point(handle: c::HANDLE, rdb: *mut ReparseDataBuffer) ->
         c::DeviceIoControl(
             handle,
             c::FSCTL_GET_REPARSE_POINT,
-            ptr::null_mut(),
+            null_mut(),
             0,
             rdb.cast(),
             c::MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
             &mut bytes_returned,
-            ptr::null_mut(),
+            null_mut(),
         )
     } == 0
     {
@@ -101,10 +102,10 @@ pub fn set_reparse_point(handle: c::HANDLE, rdb: *mut ReparseDataBuffer, len: u3
             c::FSCTL_SET_REPARSE_POINT,
             rdb.cast(),
             len,
-            ptr::null_mut(),
+            null_mut(),
             0,
             &mut bytes_returned,
-            ptr::null_mut(),
+            null_mut(),
         )
     } == 0
     {
@@ -123,12 +124,12 @@ pub fn delete_reparse_point(handle: c::HANDLE) -> io::Result<()> {
         c::DeviceIoControl(
             handle,
             c::FSCTL_DELETE_REPARSE_POINT,
-            ptr::addr_of_mut!(rgdb).cast(),
+            addr_of_mut!(rgdb).cast(),
             u32::from(REPARSE_GUID_DATA_BUFFER_HEADER_SIZE),
-            ptr::null_mut(),
+            null_mut(),
             0,
             &mut bytes_returned,
-            ptr::null_mut(),
+            null_mut(),
         )
     } == 0
     {
@@ -146,7 +147,7 @@ type MaybeU16 = MaybeUninit<u16>;
 // Ref: <rust-lang/rust/src/libstd/sys/windows/mod.rs#L106>.
 pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
     let path = os_str_to_utf16(target.as_os_str());
-    let file_part = ptr::null_mut();
+    let file_part = null_mut();
     const U16_UNINIT: MaybeU16 = MaybeU16::uninit();
     const ERROR_INSUFFICIENT_BUFFER: u32 = 122;
     // Start off with a stack buf but then spill over to the heap if we end up

@@ -8,7 +8,8 @@ use std::mem::size_of;
 use std::os::windows::ffi::OsStringExt;
 use std::os::windows::io::AsRawHandle;
 use std::path::{Path, PathBuf};
-use std::{cmp, fs, io, ptr, slice};
+use std::ptr::{addr_of_mut, copy_nonoverlapping};
+use std::{cmp, fs, io, slice};
 
 use cast::BytesAsReparseDataBuffer;
 use types::{ReparseDataBuffer, MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE, REPARSE_DATA_BUFFER_HEADER_SIZE};
@@ -53,27 +54,27 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     let rdb = data.as_mut_ptr();
     let in_buffer_size: u16 = unsafe {
         // Set the type of reparse point we are creating
-        ptr::addr_of_mut!((*rdb).reparse_tag).write(c::IO_REPARSE_TAG_MOUNT_POINT);
-        ptr::addr_of_mut!((*rdb).reserved).write(0);
+        addr_of_mut!((*rdb).reparse_tag).write(c::IO_REPARSE_TAG_MOUNT_POINT);
+        addr_of_mut!((*rdb).reserved).write(0);
 
         // Copy the junction's target
-        ptr::addr_of_mut!((*rdb).reparse_buffer.substitute_name_offset).write(0);
-        ptr::addr_of_mut!((*rdb).reparse_buffer.substitute_name_length).write(target_len_in_bytes);
+        addr_of_mut!((*rdb).reparse_buffer.substitute_name_offset).write(0);
+        addr_of_mut!((*rdb).reparse_buffer.substitute_name_length).write(target_len_in_bytes);
 
         // Copy the junction's link name
-        ptr::addr_of_mut!((*rdb).reparse_buffer.print_name_offset).write(target_len_in_bytes + UNICODE_NULL_SIZE);
-        ptr::addr_of_mut!((*rdb).reparse_buffer.print_name_length).write(0);
+        addr_of_mut!((*rdb).reparse_buffer.print_name_offset).write(target_len_in_bytes + UNICODE_NULL_SIZE);
+        addr_of_mut!((*rdb).reparse_buffer.print_name_length).write(0);
 
         // Safe because we checked `MAX_AVAILABLE_PATH_BUFFER`
-        ptr::copy_nonoverlapping(
+        copy_nonoverlapping(
             target_wchar.as_ptr().cast::<u16>(),
-            ptr::addr_of_mut!((*rdb).reparse_buffer.path_buffer).cast(),
+            addr_of_mut!((*rdb).reparse_buffer.path_buffer).cast(),
             target_wchar.len(),
         );
 
         // Set the total size of the data buffer
         let size = target_len_in_bytes.wrapping_add(MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE + 2 * UNICODE_NULL_SIZE);
-        ptr::addr_of_mut!((*rdb).reparse_data_length).write(size);
+        addr_of_mut!((*rdb).reparse_data_length).write(size);
         size.wrapping_add(REPARSE_DATA_BUFFER_HEADER_SIZE)
     };
 
