@@ -105,7 +105,7 @@ fn create_directory_exist_before() {
 
     match super::create(target, &junction) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_ALREADY_EXISTS) => {}
-        _ => panic!("directory exists before creating"),
+        other => panic!("directory exists before creating: {:?}", other),
     }
 }
 
@@ -118,7 +118,7 @@ fn create_target_no_exist() {
 
     match super::create(target, junction) {
         Ok(()) => {}
-        _ => panic!("junction should point to non exist target path"),
+        other => panic!("junction should point to non exist target path: {:?}", other),
     }
 }
 
@@ -129,21 +129,21 @@ fn delete_junctions() {
     let non_existence_dir = tmpdir.path().join("non_existence_dir");
     match super::delete(non_existence_dir) {
         Err(ref e) if e.kind() == io::ErrorKind::NotFound => {}
-        _ => panic!("target path does not exist or is not a directory"),
+        e => panic!("target path does not exist or is not a directory: {:?}", e),
     }
 
     let dir_not_junction = tmpdir.path().join("dir_not_junction");
     fs::create_dir_all(&dir_not_junction).unwrap();
     match super::delete(dir_not_junction) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
-        _ => panic!("target path is not a junction point"),
+        e => panic!("target path is not a junction point: {:?}", e),
     }
 
     let file = tmpdir.path().join("foo-file");
     File::create(&file).unwrap().write_all(b"foo").unwrap();
     match super::delete(&file) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
-        _ => panic!("target path is not a junction point"),
+        e => panic!("target path is not a junction point: {:?}", e),
     }
 }
 
@@ -160,7 +160,7 @@ fn exists_verify() {
     File::create(&no_such_file).unwrap().write_all(b"foo").unwrap();
     match super::exists(&no_such_file) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
-        _ => panic!("target exists but not a junction"),
+        other => panic!("target exists but not a junction: {:?}", other),
     }
 
     let target = tmpdir.path().join("target");
@@ -185,7 +185,7 @@ fn exists_verify() {
     super::delete(&junction).unwrap();
     match super::exists(&junction) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
-        _ => panic!("junction had been deleted"),
+        other => panic!("junction had been deleted: {:?}", other),
     }
     assert!(
         !junction_file.exists(),
@@ -212,20 +212,20 @@ fn get_target_user_dirs() {
     let non_existence_dir = tmpdir.path().join("non_existence_dir");
     match super::get_target(non_existence_dir) {
         Err(ref e) if e.kind() == io::ErrorKind::NotFound => {}
-        _ => panic!("target path does not exist or is not a directory"),
+        other => panic!("target path does not exist or is not a directory: {:?}", other),
     }
 
     let dir_not_junction = tmpdir.path().join("dir_not_junction");
     fs::create_dir_all(&dir_not_junction).unwrap();
     match super::get_target(dir_not_junction) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
-        _ => panic!("target path is not a junction point"),
+        other => panic!("target path is not a junction point: {:?}", other),
     }
 
     let file = tmpdir.path().join("foo-file");
     File::create(&file).unwrap().write_all(b"foo").unwrap();
     match super::get_target(file) {
         Err(ref e) if e.raw_os_error() == Some(ERROR_NOT_A_REPARSE_POINT) => {}
-        _ => panic!("target path is not a junction point"),
+        other => panic!("target path is not a junction point: {:?}", other),
     }
 }

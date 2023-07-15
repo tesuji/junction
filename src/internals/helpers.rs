@@ -24,7 +24,7 @@ pub fn open_reparse_point(reparse_point: &Path, write: bool) -> io::Result<File>
         .share_mode(0)
         .custom_flags(c::FILE_FLAG_OPEN_REPARSE_POINT | c::FILE_FLAG_BACKUP_SEMANTICS);
     match opts.open(reparse_point) {
-        Err(e) if e.kind() == io::ErrorKind::PermissionDenied && write => {
+        Err(e) if e.kind() == io::ErrorKind::PermissionDenied => {
             // FSCTL_SET_REPARSE_POINT requires SE_CREATE_SYMBOLIC_LINK_NAME privilege
             set_privilege()?;
             opts.open(reparse_point)

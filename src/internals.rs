@@ -80,7 +80,7 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
 }
 
 pub fn delete(junction: &Path) -> io::Result<()> {
-    let file = helpers::open_reparse_point(junction, false)?;
+    let file = helpers::open_reparse_point(junction, true)?;
     helpers::delete_reparse_point(file.as_raw_handle() as isize)
 }
 
