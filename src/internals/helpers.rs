@@ -13,7 +13,7 @@ use scopeguard::ScopeGuard;
 pub(crate) use utf16::utf16s;
 
 use super::c;
-use super::types::{ReparseDataBuffer, ReparseGuidDataBuffer, REPARSE_GUID_DATA_BUFFER_HEADER_SIZE};
+use super::c::{ReparseDataBuffer, ReparseGuidDataBuffer, REPARSE_GUID_DATA_BUFFER_HEADER_SIZE};
 
 pub static SE_RESTORE_NAME: [u16; 19] = utf16s(b"SeRestorePrivilege\0");
 pub static SE_BACKUP_NAME: [u16; 18] = utf16s(b"SeBackupPrivilege\0");

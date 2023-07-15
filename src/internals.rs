@@ -1,7 +1,6 @@
 mod c;
 mod cast;
 mod helpers;
-mod types;
 
 use std::ffi::OsString;
 use std::mem::size_of;
@@ -12,7 +11,6 @@ use std::ptr::{addr_of_mut, copy_nonoverlapping};
 use std::{cmp, fs, io, slice};
 
 use cast::BytesAsReparseDataBuffer;
-use types::{ReparseDataBuffer, MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE, REPARSE_DATA_BUFFER_HEADER_SIZE};
 
 /// This prefix indicates to NTFS that the path is to be treated as a non-interpreted
 /// path in the virtual file system.
@@ -23,8 +21,8 @@ const WCHAR_SIZE: u16 = size_of::<u16>() as _;
 pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     const UNICODE_NULL_SIZE: u16 = WCHAR_SIZE;
     const MAX_AVAILABLE_PATH_BUFFER: u16 = c::MAXIMUM_REPARSE_DATA_BUFFER_SIZE as u16
-        - REPARSE_DATA_BUFFER_HEADER_SIZE
-        - MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE
+        - c::REPARSE_DATA_BUFFER_HEADER_SIZE
+        - c::MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE
         - 2 * UNICODE_NULL_SIZE;
 
     // We're using low-level APIs to create the junction, and these are more picky about paths.
@@ -73,9 +71,9 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
         );
 
         // Set the total size of the data buffer
-        let size = target_len_in_bytes.wrapping_add(MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE + 2 * UNICODE_NULL_SIZE);
+        let size = target_len_in_bytes.wrapping_add(c::MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE + 2 * UNICODE_NULL_SIZE);
         addr_of_mut!((*rdb).reparse_data_length).write(size);
-        size.wrapping_add(REPARSE_DATA_BUFFER_HEADER_SIZE)
+        size.wrapping_add(c::REPARSE_DATA_BUFFER_HEADER_SIZE)
     };
 
     helpers::set_reparse_point(file.as_raw_handle() as isize, rdb, u32::from(in_buffer_size))
