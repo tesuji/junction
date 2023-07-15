@@ -21,7 +21,7 @@ const WCHAR_SIZE: u16 = size_of::<u16>() as _;
 pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     const UNICODE_NULL_SIZE: u16 = WCHAR_SIZE;
     const MAX_AVAILABLE_PATH_BUFFER: u16 = c::MAXIMUM_REPARSE_DATA_BUFFER_SIZE as u16
-        - c::REPARSE_DATA_BUFFER_HEADER_SIZE
+        - c::REPARSE_DATA_BUFFER::HEADER_SIZE
         - c::MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE
         - 2 * UNICODE_NULL_SIZE;
 
@@ -52,28 +52,28 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     let rdb = data.as_mut_ptr();
     let in_buffer_size: u16 = unsafe {
         // Set the type of reparse point we are creating
-        addr_of_mut!((*rdb).reparse_tag).write(c::IO_REPARSE_TAG_MOUNT_POINT);
-        addr_of_mut!((*rdb).reserved).write(0);
+        addr_of_mut!((*rdb).ReparseTag).write(c::IO_REPARSE_TAG_MOUNT_POINT);
+        addr_of_mut!((*rdb).Reserved).write(0);
 
         // Copy the junction's target
-        addr_of_mut!((*rdb).reparse_buffer.substitute_name_offset).write(0);
-        addr_of_mut!((*rdb).reparse_buffer.substitute_name_length).write(target_len_in_bytes);
+        addr_of_mut!((*rdb).ReparseBuffer.SubstituteNameOffset).write(0);
+        addr_of_mut!((*rdb).ReparseBuffer.SubstituteNameLength).write(target_len_in_bytes);
 
         // Copy the junction's link name
-        addr_of_mut!((*rdb).reparse_buffer.print_name_offset).write(target_len_in_bytes + UNICODE_NULL_SIZE);
-        addr_of_mut!((*rdb).reparse_buffer.print_name_length).write(0);
+        addr_of_mut!((*rdb).ReparseBuffer.PrintNameOffset).write(target_len_in_bytes + UNICODE_NULL_SIZE);
+        addr_of_mut!((*rdb).ReparseBuffer.PrintNameLength).write(0);
 
         // Safe because we checked `MAX_AVAILABLE_PATH_BUFFER`
         copy_nonoverlapping(
             target_wchar.as_ptr().cast::<u16>(),
-            addr_of_mut!((*rdb).reparse_buffer.path_buffer).cast(),
+            addr_of_mut!((*rdb).ReparseBuffer.PathBuffer).cast(),
             target_wchar.len(),
         );
 
         // Set the total size of the data buffer
         let size = target_len_in_bytes.wrapping_add(c::MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE + 2 * UNICODE_NULL_SIZE);
-        addr_of_mut!((*rdb).reparse_data_length).write(size);
-        size.wrapping_add(c::REPARSE_DATA_BUFFER_HEADER_SIZE)
+        addr_of_mut!((*rdb).ReparseDataLength).write(size);
+        size.wrapping_add(c::REPARSE_DATA_BUFFER::HEADER_SIZE)
     };
 
     helpers::set_reparse_point(file.as_raw_handle() as isize, rdb, u32::from(in_buffer_size))
@@ -94,7 +94,7 @@ pub fn exists(junction: &Path) -> io::Result<bool> {
     let rdb = data.as_mut_ptr();
     helpers::get_reparse_data_point(file.as_raw_handle() as isize, rdb)?;
     // The reparse tag indicates if this is a junction or not
-    Ok(unsafe { (*rdb).reparse_tag } == c::IO_REPARSE_TAG_MOUNT_POINT)
+    Ok(unsafe { (*rdb).ReparseTag } == c::IO_REPARSE_TAG_MOUNT_POINT)
 }
 
 pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
@@ -108,11 +108,11 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
     helpers::get_reparse_data_point(file.as_raw_handle() as isize, rdb)?;
     // SAFETY: rdb should be initialized now
     let rdb = unsafe { &*rdb };
-    if rdb.reparse_tag == c::IO_REPARSE_TAG_MOUNT_POINT {
-        let offset = rdb.reparse_buffer.substitute_name_offset / WCHAR_SIZE;
-        let len = rdb.reparse_buffer.substitute_name_length / WCHAR_SIZE;
+    if rdb.ReparseTag == c::IO_REPARSE_TAG_MOUNT_POINT {
+        let offset = rdb.ReparseBuffer.SubstituteNameOffset / WCHAR_SIZE;
+        let len = rdb.ReparseBuffer.SubstituteNameLength / WCHAR_SIZE;
         let wide = unsafe {
-            let buf = rdb.reparse_buffer.path_buffer.as_ptr().add(offset as usize);
+            let buf = rdb.ReparseBuffer.PathBuffer.as_ptr().add(offset as usize);
             slice::from_raw_parts(buf, len as usize)
         };
         // In case of "\??\C:\foo\bar"

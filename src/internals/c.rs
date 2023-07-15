@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use std::alloc::Layout;
 use std::os::raw::{c_uchar, c_ulong, c_ushort};
 use std::os::windows::io::RawHandle;
@@ -30,39 +32,12 @@ const _: () = {
     [(); 1][!(std_layout.align() == winapi_layout.align()) as usize];
 };
 
-// NOTE: to use `size_of` operator, below structs should be packed.
-/// Reparse Data Buffer header size = `sizeof(u32) + 2 * sizeof(u16)`
-pub const REPARSE_DATA_BUFFER_HEADER_SIZE: u16 = 8;
 /// Reparse GUID Data Buffer header size = `sizeof(u32) + 2*sizeof(u16) + sizeof(GUID)`
 pub const REPARSE_GUID_DATA_BUFFER_HEADER_SIZE: u16 = 24;
 /// MountPointReparseBuffer header size = `4 * sizeof(u16)`
 pub const MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE: u16 = 8;
 
 type VarLenArr<T> = [T; 1];
-
-#[repr(C)]
-#[derive(Debug)]
-pub struct MountPointReparseBuffer {
-    /// Offset, in bytes, of the substitute name string in the `path_buffer` array.
-    /// Note that this offset must be divided by `sizeof(u16)` to get the array index.
-    pub substitute_name_offset: u16,
-    /// Length, in bytes, of the substitute name string. If this string is `NULL`-terminated,
-    /// it does not include space for the `UNICODE_NULL` character.
-    pub substitute_name_length: u16,
-    /// Offset, in bytes, of the print name string in the `path_buffer` array.
-    /// Note that this offset must be divided by `sizeof(u16)` to get the array index.
-    pub print_name_offset: u16,
-    /// Length, in bytes, of the print name string. If this string is `NULL`-terminated,
-    /// it does not include space for the `UNICODE_NULL` character.
-    pub print_name_length: u16,
-    /// A buffer containing the Unicode-encoded path string. The path string contains the
-    /// substitute name string and print name string. The substitute name and print name strings
-    /// can appear in any order in the path_buffer. (To locate the substitute name and print name
-    /// strings in the path_buffer, use the `substitute_name_offset`, `substitute_name_length`,
-    /// `print_name_offset`, and `print_name_length` members.)
-    pub path_buffer: VarLenArr<u16>,
-}
-
 /// This structure contains reparse point data for a Microsoft reparse point.
 ///
 /// Read more:
@@ -70,15 +45,44 @@ pub struct MountPointReparseBuffer {
 /// * https://www.pinvoke.net/default.aspx/Structures.REPARSE_DATA_BUFFER
 #[repr(C)]
 #[derive(Debug)]
-pub struct ReparseDataBuffer {
+pub struct REPARSE_DATA_BUFFER {
     /// Reparse point tag. Must be a Microsoft reparse point tag.
-    pub reparse_tag: u32,
+    pub ReparseTag: c_ulong,
     /// Size, in bytes, of the reparse data in the `data_buffer` member.
     /// Or the size of the `path_buffer` field, in bytes, plus 8 (= 4 * sizeof(u16))
-    pub reparse_data_length: u16,
+    pub ReparseDataLength: c_ushort,
     /// Reversed. It SHOULD be set to 0, and MUST be ignored.
-    pub reserved: u16,
-    pub reparse_buffer: MountPointReparseBuffer,
+    pub Reserved: c_ushort,
+    pub ReparseBuffer: MountPointReparseBuffer,
+}
+
+impl REPARSE_DATA_BUFFER {
+    // NOTE: to use `size_of` operator, below structs should be packed.
+    /// Reparse Data Buffer header size = `sizeof(u32) + 2 * sizeof(u16)`
+    pub const HEADER_SIZE: u16 = 8;
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct MountPointReparseBuffer {
+    /// Offset, in bytes, of the substitute name string in the `path_buffer` array.
+    /// Note that this offset must be divided by `sizeof(u16)` to get the array index.
+    pub SubstituteNameOffset: c_ushort,
+    /// Length, in bytes, of the substitute name string. If this string is `NULL`-terminated,
+    /// it does not include space for the `UNICODE_NULL` character.
+    pub SubstituteNameLength: c_ushort,
+    /// Offset, in bytes, of the print name string in the `path_buffer` array.
+    /// Note that this offset must be divided by `sizeof(u16)` to get the array index.
+    pub PrintNameOffset: c_ushort,
+    /// Length, in bytes, of the print name string. If this string is `NULL`-terminated,
+    /// it does not include space for the `UNICODE_NULL` character.
+    pub PrintNameLength: c_ushort,
+    /// A buffer containing the Unicode-encoded path string. The path string contains the
+    /// substitute name string and print name string. The substitute name and print name strings
+    /// can appear in any order in the path_buffer. (To locate the substitute name and print name
+    /// strings in the path_buffer, use the `substitute_name_offset`, `substitute_name_length`,
+    /// `print_name_offset`, and `print_name_length` members.)
+    pub PathBuffer: VarLenArr<c_ushort>,
 }
 
 #[repr(C)]

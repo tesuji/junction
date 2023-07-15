@@ -13,7 +13,7 @@ use scopeguard::ScopeGuard;
 pub(crate) use utf16::utf16s;
 
 use super::c;
-use super::c::{ReparseDataBuffer, ReparseGuidDataBuffer, REPARSE_GUID_DATA_BUFFER_HEADER_SIZE};
+use super::c::{ReparseGuidDataBuffer, REPARSE_DATA_BUFFER, REPARSE_GUID_DATA_BUFFER_HEADER_SIZE};
 
 pub static SE_RESTORE_NAME: [u16; 19] = utf16s(b"SeRestorePrivilege\0");
 pub static SE_BACKUP_NAME: [u16; 18] = utf16s(b"SeBackupPrivilege\0");
@@ -72,7 +72,7 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
     }
 }
 
-pub fn get_reparse_data_point(handle: c::HANDLE, rdb: *mut ReparseDataBuffer) -> io::Result<()> {
+pub fn get_reparse_data_point(handle: c::HANDLE, rdb: *mut REPARSE_DATA_BUFFER) -> io::Result<()> {
     // Call DeviceIoControl to get the reparse point data
     let mut bytes_returned: u32 = 0;
     if unsafe {
@@ -93,7 +93,7 @@ pub fn get_reparse_data_point(handle: c::HANDLE, rdb: *mut ReparseDataBuffer) ->
     Ok(())
 }
 
-pub fn set_reparse_point(handle: c::HANDLE, rdb: *mut ReparseDataBuffer, len: u32) -> io::Result<()> {
+pub fn set_reparse_point(handle: c::HANDLE, rdb: *mut REPARSE_DATA_BUFFER, len: u32) -> io::Result<()> {
     let mut bytes_returned: u32 = 0;
     if unsafe {
         c::DeviceIoControl(

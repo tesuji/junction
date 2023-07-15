@@ -1,7 +1,7 @@
 use std::alloc::{alloc, handle_alloc_error, Layout};
 use std::mem::align_of;
 
-use super::c::{ReparseDataBuffer, MAXIMUM_REPARSE_DATA_BUFFER_SIZE};
+use super::c::{MAXIMUM_REPARSE_DATA_BUFFER_SIZE, REPARSE_DATA_BUFFER};
 
 type MaybeU8 = std::mem::MaybeUninit<u8>;
 
@@ -12,7 +12,7 @@ pub struct BytesAsReparseDataBuffer {
 
 const _: () = {
     let a = align_of::<BytesAsReparseDataBuffer>();
-    let b = align_of::<ReparseDataBuffer>();
+    let b = align_of::<REPARSE_DATA_BUFFER>();
     [(); 1][!((a % b) == 0) as usize]
 };
 
@@ -30,7 +30,7 @@ impl BytesAsReparseDataBuffer {
         Self { value: boxed }
     }
 
-    pub fn as_mut_ptr(&mut self) -> *mut ReparseDataBuffer {
-        self.value.as_mut_ptr().cast::<ReparseDataBuffer>()
+    pub fn as_mut_ptr(&mut self) -> *mut REPARSE_DATA_BUFFER {
+        self.value.as_mut_ptr().cast::<REPARSE_DATA_BUFFER>()
     }
 }
