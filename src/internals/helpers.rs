@@ -38,11 +38,10 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
     const ERROR_NOT_ALL_ASSIGNED: u32 = 1300;
     const TOKEN_PRIVILEGES_SIZE: u32 = mem::size_of::<c::TOKEN_PRIVILEGES>() as _;
     unsafe {
-        let mut handle = <MaybeUninit<c::HANDLE>>::uninit();
-        if c::OpenProcessToken(c::GetCurrentProcess(), c::TOKEN_ADJUST_PRIVILEGES, handle.as_mut_ptr()) == 0 {
+        let mut handle: c::HANDLE = 0;
+        if c::OpenProcessToken(c::GetCurrentProcess(), c::TOKEN_ADJUST_PRIVILEGES, &mut handle) == 0 {
             return Err(io::Error::last_os_error());
         }
-        let handle = handle.assume_init();
         let handle = scopeguard::guard(handle, |h| {
             c::CloseHandle(h);
         });
