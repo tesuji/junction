@@ -5,7 +5,7 @@ use std::os::raw::{c_ulong, c_ushort};
 use std::os::windows::io::RawHandle;
 
 pub use windows_sys::Win32::Foundation::{
-    CloseHandle, GetLastError, SetLastError, GENERIC_READ, GENERIC_WRITE, HANDLE,
+    CloseHandle, GetLastError, SetLastError, FALSE, GENERIC_READ, GENERIC_WRITE, HANDLE, TRUE,
 };
 pub use windows_sys::Win32::Security::{
     AdjustTokenPrivileges, LookupPrivilegeValueW, SE_PRIVILEGE_ENABLED, TOKEN_ADJUST_PRIVILEGES, TOKEN_PRIVILEGES,

@@ -14,26 +14,26 @@ pub(crate) use utf16::utf16s;
 
 use super::c;
 
-pub static SE_RESTORE_NAME: [u16; 19] = utf16s(b"SeRestorePrivilege\0");
-pub static SE_BACKUP_NAME: [u16; 18] = utf16s(b"SeBackupPrivilege\0");
+// See more in <https://learn.microsoft.com/en-us/windows/win32/secauthz/privilege-constants>.
+pub static SE_CREATE_SYMBOLIC_LINK_NAME: [u16; 30] = utf16s(b"SeCreateSymbolicLinkPrivilege\0");
 
-pub fn open_reparse_point(reparse_point: &Path, rdwr: bool) -> io::Result<File> {
-    let access = c::GENERIC_READ | if rdwr { c::GENERIC_WRITE } else { 0 };
+pub fn open_reparse_point(reparse_point: &Path, write: bool) -> io::Result<File> {
+    let access = c::GENERIC_READ | if write { c::GENERIC_WRITE } else { 0 };
     let mut opts = OpenOptions::new();
     opts.access_mode(access)
         .share_mode(0)
         .custom_flags(c::FILE_FLAG_OPEN_REPARSE_POINT | c::FILE_FLAG_BACKUP_SEMANTICS);
     match opts.open(reparse_point) {
-        Err(e) if e.kind() == io::ErrorKind::PermissionDenied => {
-            // Obtain privilege in case we don't have it yet
-            set_privilege(rdwr)?;
+        Err(e) if e.kind() == io::ErrorKind::PermissionDenied && write => {
+            // FSCTL_SET_REPARSE_POINT requires SE_CREATE_SYMBOLIC_LINK_NAME privilege
+            set_privilege()?;
             opts.open(reparse_point)
         }
         other => other,
     }
 }
 
-fn set_privilege(rdwr: bool) -> io::Result<()> {
+fn set_privilege() -> io::Result<()> {
     const ERROR_NOT_ALL_ASSIGNED: u32 = 1300;
     const TOKEN_PRIVILEGES_SIZE: u32 = mem::size_of::<c::TOKEN_PRIVILEGES>() as _;
     unsafe {
@@ -45,17 +45,13 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
             c::CloseHandle(h);
         });
         let mut tp: c::TOKEN_PRIVILEGES = mem::zeroed();
-        let name = if rdwr {
-            SE_RESTORE_NAME.as_ptr()
-        } else {
-            SE_BACKUP_NAME.as_ptr()
-        };
+        let name = SE_CREATE_SYMBOLIC_LINK_NAME.as_ptr();
         if c::LookupPrivilegeValueW(null(), name, &mut tp.Privileges[0].Luid) == 0 {
             return Err(io::Error::last_os_error());
         }
         tp.PrivilegeCount = 1;
         tp.Privileges[0].Attributes = c::SE_PRIVILEGE_ENABLED;
-        if c::AdjustTokenPrivileges(*handle, 0, &tp, TOKEN_PRIVILEGES_SIZE, null_mut(), null_mut()) == 0 {
+        if c::AdjustTokenPrivileges(*handle, c::FALSE, &tp, TOKEN_PRIVILEGES_SIZE, null_mut(), null_mut()) == 0 {
             return Err(io::Error::last_os_error());
         }
         if c::GetLastError() == ERROR_NOT_ALL_ASSIGNED {
