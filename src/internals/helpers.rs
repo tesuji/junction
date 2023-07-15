@@ -197,11 +197,12 @@ pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
     }
 }
 
-unsafe fn maybe_slice_to_ptr(s: &mut [MaybeU16]) -> *mut u16 {
+fn maybe_slice_to_ptr(s: &mut [MaybeU16]) -> *mut u16 {
+    // SAFETY: `MaybeUninit<T>` and T are guaranteed to have the same layout
     s.as_mut_ptr() as *mut u16
 }
 
-unsafe fn maybe_slice_assume_init(s: &[MaybeU16]) -> &[u16] {
+fn maybe_slice_assume_init(s: &[MaybeU16]) -> &[u16] {
     // SAFETY: `MaybeUninit<T>` and T are guaranteed to have the same layout
-    &*(s as *const [MaybeU16] as *const [u16])
+    unsafe { &*(s as *const [MaybeU16] as *const [u16]) }
 }
