@@ -21,7 +21,7 @@ const WCHAR_SIZE: u16 = size_of::<u16>() as _;
 pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     const UNICODE_NULL_SIZE: u16 = WCHAR_SIZE;
     const MAX_AVAILABLE_PATH_BUFFER: u16 = c::MAXIMUM_REPARSE_DATA_BUFFER_SIZE as u16
-        - c::REPARSE_DATA_BUFFER::HEADER_SIZE
+        - c::REPARSE_DATA_BUFFER_HEADER_SIZE
         - c::MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE
         - 2 * UNICODE_NULL_SIZE;
 
@@ -73,7 +73,7 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
         // Set the total size of the data buffer
         let size = target_len_in_bytes.wrapping_add(c::MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE + 2 * UNICODE_NULL_SIZE);
         addr_of_mut!((*rdb).ReparseDataLength).write(size);
-        size.wrapping_add(c::REPARSE_DATA_BUFFER::HEADER_SIZE)
+        size.wrapping_add(c::REPARSE_DATA_BUFFER_HEADER_SIZE)
     };
 
     helpers::set_reparse_point(file.as_raw_handle() as isize, rdb, u32::from(in_buffer_size))

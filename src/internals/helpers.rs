@@ -13,7 +13,6 @@ use scopeguard::ScopeGuard;
 pub(crate) use utf16::utf16s;
 
 use super::c;
-use super::c::{ReparseGuidDataBuffer, REPARSE_DATA_BUFFER, REPARSE_GUID_DATA_BUFFER_HEADER_SIZE};
 
 pub static SE_RESTORE_NAME: [u16; 19] = utf16s(b"SeRestorePrivilege\0");
 pub static SE_BACKUP_NAME: [u16; 18] = utf16s(b"SeBackupPrivilege\0");
@@ -72,7 +71,7 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
     }
 }
 
-pub fn get_reparse_data_point(handle: c::HANDLE, rdb: *mut REPARSE_DATA_BUFFER) -> io::Result<()> {
+pub fn get_reparse_data_point(handle: c::HANDLE, rdb: *mut c::REPARSE_DATA_BUFFER) -> io::Result<()> {
     // Call DeviceIoControl to get the reparse point data
     let mut bytes_returned: u32 = 0;
     if unsafe {
@@ -93,7 +92,7 @@ pub fn get_reparse_data_point(handle: c::HANDLE, rdb: *mut REPARSE_DATA_BUFFER) 
     Ok(())
 }
 
-pub fn set_reparse_point(handle: c::HANDLE, rdb: *mut REPARSE_DATA_BUFFER, len: u32) -> io::Result<()> {
+pub fn set_reparse_point(handle: c::HANDLE, rdb: *mut c::REPARSE_DATA_BUFFER, len: u32) -> io::Result<()> {
     let mut bytes_returned: u32 = 0;
     if unsafe {
         c::DeviceIoControl(
@@ -115,8 +114,8 @@ pub fn set_reparse_point(handle: c::HANDLE, rdb: *mut REPARSE_DATA_BUFFER, len: 
 
 // See https://msdn.microsoft.com/en-us/library/windows/desktop/aa364560(v=vs.85).aspx
 pub fn delete_reparse_point(handle: c::HANDLE) -> io::Result<()> {
-    let mut rgdb: ReparseGuidDataBuffer = unsafe { mem::zeroed() };
-    rgdb.reparse_tag = c::IO_REPARSE_TAG_MOUNT_POINT;
+    let mut rgdb: c::REPARSE_GUID_DATA_BUFFER = unsafe { mem::zeroed() };
+    rgdb.ReparseTag = c::IO_REPARSE_TAG_MOUNT_POINT;
     let mut bytes_returned: u32 = 0;
 
     if unsafe {
@@ -124,7 +123,7 @@ pub fn delete_reparse_point(handle: c::HANDLE) -> io::Result<()> {
             handle,
             c::FSCTL_DELETE_REPARSE_POINT,
             addr_of_mut!(rgdb).cast(),
-            u32::from(REPARSE_GUID_DATA_BUFFER_HEADER_SIZE),
+            u32::from(c::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE),
             null_mut(),
             0,
             &mut bytes_returned,
