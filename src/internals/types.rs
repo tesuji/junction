@@ -59,7 +59,7 @@ pub struct GenericReparseBuffer {
 }
 
 #[repr(C)]
-pub struct GUID {
+pub struct Guid {
     pub a: c_ulong,
     pub b: c_ushort,
     pub c: c_ushort,
@@ -87,7 +87,7 @@ pub struct ReparseGuidDataBuffer {
     /// point, the application must provide a non-`NULL` `GUID` in the `reparse_guid`
     /// member. When retrieving a reparse point from the file system, `reparse_guid`
     /// is the `GUID` assigned when the reparse point was set.
-    pub reparse_guid: GUID,
+    pub reparse_guid: Guid,
     /// The user-defined data for the reparse point. The contents are determined by
     /// the reparse point implementer. The tag in the `reparse_tag` member and the
     /// `GUID` in the `reparse_guid` member indicate how the data is to be interpreted.
@@ -96,7 +96,7 @@ pub struct ReparseGuidDataBuffer {
 
 impl std::fmt::Debug for ReparseGuidDataBuffer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let GUID { a, b, c, d } = self.reparse_guid;
+        let Guid { a, b, c, d } = self.reparse_guid;
         f.debug_struct("ReparseGuidDataBuffer")
             .field("reparse_tag", &self.reparse_tag)
             .field("reparse_data_length", &self.reparse_data_length)

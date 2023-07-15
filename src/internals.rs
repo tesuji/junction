@@ -77,12 +77,12 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
         size.wrapping_add(REPARSE_DATA_BUFFER_HEADER_SIZE)
     };
 
-    helpers::set_reparse_point(c::same_handle(file.as_raw_handle()), rdb, u32::from(in_buffer_size))
+    helpers::set_reparse_point(file.as_raw_handle() as isize, rdb, u32::from(in_buffer_size))
 }
 
 pub fn delete(junction: &Path) -> io::Result<()> {
     let file = helpers::open_reparse_point(junction, true)?;
-    helpers::delete_reparse_point(c::same_handle(file.as_raw_handle()))
+    helpers::delete_reparse_point(file.as_raw_handle() as isize)
 }
 
 pub fn exists(junction: &Path) -> io::Result<bool> {
@@ -93,7 +93,7 @@ pub fn exists(junction: &Path) -> io::Result<bool> {
     // Allocate enough space to fit the maximum sized reparse data buffer
     let mut data = BytesAsReparseDataBuffer::new();
     let rdb = data.as_mut_ptr();
-    helpers::get_reparse_data_point(c::same_handle(file.as_raw_handle()), rdb)?;
+    helpers::get_reparse_data_point(file.as_raw_handle() as isize, rdb)?;
     // The reparse tag indicates if this is a junction or not
     Ok(unsafe { (*rdb).reparse_tag } == c::IO_REPARSE_TAG_MOUNT_POINT)
 }
@@ -106,7 +106,7 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
     let file = helpers::open_reparse_point(junction, false)?;
     let mut data = BytesAsReparseDataBuffer::new();
     let rdb = data.as_mut_ptr();
-    helpers::get_reparse_data_point(c::same_handle(file.as_raw_handle()), rdb)?;
+    helpers::get_reparse_data_point(file.as_raw_handle() as isize, rdb)?;
     // SAFETY: rdb should be initialized now
     let rdb = unsafe { &*rdb };
     if rdb.reparse_tag == c::IO_REPARSE_TAG_MOUNT_POINT {

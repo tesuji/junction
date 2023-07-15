@@ -56,15 +56,7 @@ fn set_privilege(rdwr: bool) -> io::Result<()> {
         }
         tp.PrivilegeCount = 1;
         tp.Privileges[0].Attributes = c::SE_PRIVILEGE_ENABLED;
-        if c::AdjustTokenPrivileges(
-            *handle,
-            0,
-            &mut tp,
-            TOKEN_PRIVILEGES_SIZE,
-            ptr::null_mut(),
-            ptr::null_mut(),
-        ) == 0
-        {
+        if c::AdjustTokenPrivileges(*handle, 0, &tp, TOKEN_PRIVILEGES_SIZE, ptr::null_mut(), ptr::null_mut()) == 0 {
             return Err(io::Error::last_os_error());
         }
         if c::GetLastError() == ERROR_NOT_ALL_ASSIGNED {
