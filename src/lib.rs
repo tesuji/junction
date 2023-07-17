@@ -26,6 +26,10 @@ use std::path::{Path, PathBuf};
 ///
 /// N.B. Only works on NTFS.
 ///
+/// # Error
+///
+/// This function may error if the `junction` path already exists.
+///
 /// # Example
 ///
 /// ```rust
@@ -53,8 +57,8 @@ where
 ///
 /// N.B. Only works on NTFS.
 ///
-/// This function does not delete the file or directory. Also it does nothing
-/// if the `junction` point does not exist.
+/// This function delete the junction point only, leaving the target directory
+/// and its content as is. It does nothing if the `junction` point does not exist.
 ///
 /// # Example
 ///

@@ -15,10 +15,14 @@ use super::c;
 
 pub fn open_reparse_point(reparse_point: &Path, write: bool) -> io::Result<File> {
     let access = c::GENERIC_READ | if write { c::GENERIC_WRITE } else { 0 };
+    // Set this flag to obtain a handle to a directory. Appropriate security checks
+    // still apply when this flag is used without SE_BACKUP_NAME and SE_RESTORE_NAME
+    // privileges.
+    // Ref <https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilea#directories>
+    let dir_attrs = c::FILE_FLAG_OPEN_REPARSE_POINT | c::FILE_FLAG_BACKUP_SEMANTICS;
     let mut opts = OpenOptions::new();
-    opts.access_mode(access)
-        .share_mode(0)
-        .custom_flags(c::FILE_FLAG_OPEN_REPARSE_POINT | c::FILE_FLAG_BACKUP_SEMANTICS);
+    opts.access_mode(access).share_mode(0).custom_flags(dir_attrs);
+    // Opens existing directory path
     match opts.open(reparse_point) {
         Err(e) if e.kind() == io::ErrorKind::PermissionDenied => {
             set_privilege()?;
@@ -128,11 +132,11 @@ fn os_str_to_utf16(s: &OsStr) -> Vec<u16> {
 }
 
 type MaybeU16 = MaybeUninit<u16>;
-// Returns the len of buf when success.
-// Ref: <rust-lang/rust/src/libstd/sys/windows/mod.rs#L106>.
+// Returns canonical path without the terminating null character.
+// Ref: rust-lang/rust/blob/master/library/std/src/sys/windows/mod.rs#L198
 pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
     let path = os_str_to_utf16(target.as_os_str());
-    let file_part = null_mut();
+    let path = path.as_ptr().cast::<u16>();
     const U16_UNINIT: MaybeU16 = MaybeU16::uninit();
     // Start off with a stack buf but then spill over to the heap if we end up
     // needing more space.
@@ -160,12 +164,7 @@ pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
             };
 
             c::SetLastError(0);
-            let k = c::GetFullPathNameW(
-                path.as_ptr().cast::<u16>(),
-                n as u32,
-                maybe_slice_to_ptr(buf),
-                file_part,
-            ) as usize;
+            let k = c::GetFullPathNameW(path, n as u32, maybe_slice_to_ptr(buf), null_mut()) as usize;
             if k == 0 {
                 return Err(crate::io::Error::last_os_error());
             }

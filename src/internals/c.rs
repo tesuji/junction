@@ -71,8 +71,10 @@ type VarLenArr<T> = [T; 1];
 pub struct REPARSE_DATA_BUFFER {
     /// Reparse point tag. Must be a Microsoft reparse point tag.
     pub ReparseTag: c_ulong,
-    /// Size, in bytes, of the reparse data in the `data_buffer` member.
-    /// Or the size of the `path_buffer` field, in bytes, plus 8 (= 4 * sizeof(u16))
+    // Size, in bytes, of the data after the Reserved member.
+    // This can be calculated by:
+    // MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE + SubstituteNameLength
+    // + PrintNameLength + (names.nul_terminated() ? 2 * sizeof(char) : 0);
     pub ReparseDataLength: c_ushort,
     /// Reversed. It SHOULD be set to 0, and MUST be ignored.
     pub Reserved: c_ushort,
@@ -82,13 +84,13 @@ pub struct REPARSE_DATA_BUFFER {
 #[repr(C)]
 #[derive(Debug)]
 pub struct MountPointReparseBuffer {
-    /// Offset, in bytes, of the substitute name string in the `path_buffer` array.
+    /// Offset, in bytes, of the substitute name string in the `PathBuffer` array.
     /// Note that this offset must be divided by `sizeof(u16)` to get the array index.
     pub SubstituteNameOffset: c_ushort,
     /// Length, in bytes, of the substitute name string. If this string is `NULL`-terminated,
     /// it does not include space for the `UNICODE_NULL` character.
     pub SubstituteNameLength: c_ushort,
-    /// Offset, in bytes, of the print name string in the `path_buffer` array.
+    /// Offset, in bytes, of the print name string in the `PathBuffer` array.
     /// Note that this offset must be divided by `sizeof(u16)` to get the array index.
     pub PrintNameOffset: c_ushort,
     /// Length, in bytes, of the print name string. If this string is `NULL`-terminated,
@@ -96,8 +98,8 @@ pub struct MountPointReparseBuffer {
     pub PrintNameLength: c_ushort,
     /// A buffer containing the Unicode-encoded path string. The path string contains the
     /// substitute name string and print name string. The substitute name and print name strings
-    /// can appear in any order in the path_buffer. (To locate the substitute name and print name
-    /// strings in the path_buffer, use the `substitute_name_offset`, `substitute_name_length`,
-    /// `print_name_offset`, and `print_name_length` members.)
+    /// can appear in any order in the PathBuffer. (To locate the substitute name and print name
+    /// strings in the PathBuffer, use the `SubstituteNameOffset`, `SubstituteNameLength`,
+    /// `PrintNameOffset`, and `PrintNameLength` members.)
     pub PathBuffer: VarLenArr<c_ushort>,
 }

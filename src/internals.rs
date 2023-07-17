@@ -37,7 +37,7 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
         let min_len = cmp::min(len, u16::MAX as usize) as u16;
         // Len without `UNICODE_NULL` at the end
         let target_len_in_bytes = min_len.saturating_mul(WCHAR_SIZE);
-        // Check if `target_wchar.len()` may lead to a buffer overflow.
+        // Check for buffer overflow.
         if target_len_in_bytes > MAX_AVAILABLE_PATH_BUFFER {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "`target` is too long"));
         }
@@ -55,11 +55,11 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
         addr_of_mut!((*rdb).ReparseTag).write(c::IO_REPARSE_TAG_MOUNT_POINT);
         addr_of_mut!((*rdb).Reserved).write(0);
 
-        // Copy the junction's target
+        // We write target at offset 0 of PathBuffer
         addr_of_mut!((*rdb).ReparseBuffer.SubstituteNameOffset).write(0);
         addr_of_mut!((*rdb).ReparseBuffer.SubstituteNameLength).write(target_len_in_bytes);
 
-        // Copy the junction's link name
+        // We do not use PrintName. However let's set its offset correctly right after SubstituteName
         addr_of_mut!((*rdb).ReparseBuffer.PrintNameOffset).write(target_len_in_bytes + UNICODE_NULL_SIZE);
         addr_of_mut!((*rdb).ReparseBuffer.PrintNameLength).write(0);
 
@@ -93,8 +93,10 @@ pub fn exists(junction: &Path) -> io::Result<bool> {
     let mut data = BytesAsReparseDataBuffer::new();
     let rdb = data.as_mut_ptr();
     helpers::get_reparse_data_point(file.as_raw_handle() as isize, rdb)?;
+    // SATETY: rdb should be initialized now
+    let rdb = unsafe { &*rdb };
     // The reparse tag indicates if this is a junction or not
-    Ok(unsafe { (*rdb).ReparseTag } == c::IO_REPARSE_TAG_MOUNT_POINT)
+    Ok(rdb.ReparseTag == c::IO_REPARSE_TAG_MOUNT_POINT)
 }
 
 pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
