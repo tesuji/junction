@@ -7,11 +7,14 @@ use std::os::windows::io::RawHandle;
 
 use windows_sys::core::GUID;
 pub use windows_sys::Win32::Foundation::{
-    CloseHandle, GetLastError, SetLastError, FALSE, GENERIC_READ, GENERIC_WRITE, HANDLE, TRUE,
+    CloseHandle, GetLastError, SetLastError, ERROR_INSUFFICIENT_BUFFER, FALSE, GENERIC_READ, GENERIC_WRITE, HANDLE,
+    INVALID_HANDLE_VALUE,
 };
 pub use windows_sys::Win32::Security::{
     AdjustTokenPrivileges, LookupPrivilegeValueW, SE_PRIVILEGE_ENABLED, TOKEN_ADJUST_PRIVILEGES, TOKEN_PRIVILEGES,
 };
+// See more in <https://learn.microsoft.com/en-us/windows/win32/secauthz/privilege-constants>.
+pub use windows_sys::Win32::Security::{SE_BACKUP_NAME, SE_CREATE_SYMBOLIC_LINK_NAME, SE_RESTORE_NAME};
 pub use windows_sys::Win32::Storage::FileSystem::{
     GetFullPathNameW, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
     REPARSE_GUID_DATA_BUFFER,

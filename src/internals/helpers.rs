@@ -13,9 +13,6 @@ pub(crate) use utf16::utf16s;
 
 use super::c;
 
-// See more in <https://learn.microsoft.com/en-us/windows/win32/secauthz/privilege-constants>.
-pub static SE_CREATE_SYMBOLIC_LINK_NAME: [u16; 30] = utf16s(b"SeCreateSymbolicLinkPrivilege\0");
-
 pub fn open_reparse_point(reparse_point: &Path, write: bool) -> io::Result<File> {
     let access = c::GENERIC_READ | if write { c::GENERIC_WRITE } else { 0 };
     let mut opts = OpenOptions::new();
@@ -24,7 +21,6 @@ pub fn open_reparse_point(reparse_point: &Path, write: bool) -> io::Result<File>
         .custom_flags(c::FILE_FLAG_OPEN_REPARSE_POINT | c::FILE_FLAG_BACKUP_SEMANTICS);
     match opts.open(reparse_point) {
         Err(e) if e.kind() == io::ErrorKind::PermissionDenied => {
-            // FSCTL_SET_REPARSE_POINT requires SE_CREATE_SYMBOLIC_LINK_NAME privilege
             set_privilege()?;
             opts.open(reparse_point)
         }
@@ -36,7 +32,7 @@ fn set_privilege() -> io::Result<()> {
     const ERROR_NOT_ALL_ASSIGNED: u32 = 1300;
     const TOKEN_PRIVILEGES_SIZE: u32 = size_of::<c::TOKEN_PRIVILEGES>() as _;
     unsafe {
-        let mut handle: c::HANDLE = 0;
+        let mut handle: c::HANDLE = c::INVALID_HANDLE_VALUE;
         if c::OpenProcessToken(c::GetCurrentProcess(), c::TOKEN_ADJUST_PRIVILEGES, &mut handle) == 0 {
             return Err(io::Error::last_os_error());
         }
@@ -44,7 +40,9 @@ fn set_privilege() -> io::Result<()> {
             c::CloseHandle(h);
         });
         let mut tp: c::TOKEN_PRIVILEGES = zeroed();
-        let name = SE_CREATE_SYMBOLIC_LINK_NAME.as_ptr();
+        // FSCTL_SET_REPARSE_POINT requires SE_CREATE_SYMBOLIC_LINK_NAME privilege
+        // Ref <https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_set_reparse_point>
+        let name = c::SE_CREATE_SYMBOLIC_LINK_NAME;
         if c::LookupPrivilegeValueW(null(), name, &mut tp.Privileges[0].Luid) == 0 {
             return Err(io::Error::last_os_error());
         }
@@ -136,7 +134,6 @@ pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
     let path = os_str_to_utf16(target.as_os_str());
     let file_part = null_mut();
     const U16_UNINIT: MaybeU16 = MaybeU16::uninit();
-    const ERROR_INSUFFICIENT_BUFFER: u32 = 122;
     // Start off with a stack buf but then spill over to the heap if we end up
     // needing more space.
     //
@@ -172,11 +169,12 @@ pub fn get_full_path(target: &Path) -> io::Result<Vec<u16>> {
             if k == 0 {
                 return Err(crate::io::Error::last_os_error());
             }
-            if c::GetLastError() == ERROR_INSUFFICIENT_BUFFER {
+            if c::GetLastError() == c::ERROR_INSUFFICIENT_BUFFER {
                 n = n.saturating_mul(2).min(u32::MAX as usize);
             } else if k > n {
                 n = k;
             } else {
+                // TODO(perf): reduce an allocation by using `heap_buf.set_len(k)`
                 // Safety: First `k` values are initialized.
                 let slice: &[u16] = maybe_slice_assume_init(&buf[..k]);
                 return Ok(slice.into());
