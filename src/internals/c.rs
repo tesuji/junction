@@ -1,9 +1,11 @@
 #![allow(non_snake_case)]
 
 use std::alloc::Layout;
+use std::mem::size_of;
 use std::os::raw::{c_ulong, c_ushort};
 use std::os::windows::io::RawHandle;
 
+use windows_sys::core::GUID;
 pub use windows_sys::Win32::Foundation::{
     CloseHandle, GetLastError, SetLastError, FALSE, GENERIC_READ, GENERIC_WRITE, HANDLE, TRUE,
 };
@@ -34,12 +36,25 @@ const _: () = {
 };
 
 // NOTE: to use `size_of` operator, below structs should be packed.
-/// Reparse Data Buffer header size = `sizeof(u32) + 2 * sizeof(u16)`
+// TODO: use `offset_of!` when stabilized.
+/// Reparse Data Buffer header size
 pub const REPARSE_DATA_BUFFER_HEADER_SIZE: u16 = 8;
-/// Reparse GUID Data Buffer header size = `sizeof(u32) + 2*sizeof(u16) + sizeof(GUID)`
+/// Reparse GUID Data Buffer header size
 pub const REPARSE_GUID_DATA_BUFFER_HEADER_SIZE: u16 = 24;
-/// MountPointReparseBuffer header size = `4 * sizeof(u16)`
+/// MountPointReparseBuffer header size
 pub const MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE: u16 = 8;
+
+// Safety checks for correct header size due to the lacks of `offset_of!`.
+const _: () = {
+    let rdb_header_size = size_of::<c_ulong>() + size_of::<c_ushort>() * 2;
+    assert!(rdb_header_size == REPARSE_DATA_BUFFER_HEADER_SIZE as _);
+
+    let mprb_header_size = size_of::<c_ushort>() * 4;
+    assert!(mprb_header_size == MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE as _);
+
+    let rgdb_header_size = size_of::<c_ulong>() + size_of::<c_ushort>() * 2 + size_of::<GUID>();
+    assert!(rgdb_header_size == REPARSE_GUID_DATA_BUFFER_HEADER_SIZE as _);
+};
 
 type VarLenArr<T> = [T; 1];
 
