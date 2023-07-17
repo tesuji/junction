@@ -3,7 +3,7 @@ mod utf16;
 use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};
 use std::io;
-use std::mem::{self, MaybeUninit};
+use std::mem::{size_of, zeroed, MaybeUninit};
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::fs::OpenOptionsExt;
 use std::path::Path;
@@ -35,7 +35,7 @@ pub fn open_reparse_point(reparse_point: &Path, write: bool) -> io::Result<File>
 
 fn set_privilege() -> io::Result<()> {
     const ERROR_NOT_ALL_ASSIGNED: u32 = 1300;
-    const TOKEN_PRIVILEGES_SIZE: u32 = mem::size_of::<c::TOKEN_PRIVILEGES>() as _;
+    const TOKEN_PRIVILEGES_SIZE: u32 = size_of::<c::TOKEN_PRIVILEGES>() as _;
     unsafe {
         let mut handle: c::HANDLE = 0;
         if c::OpenProcessToken(c::GetCurrentProcess(), c::TOKEN_ADJUST_PRIVILEGES, &mut handle) == 0 {
@@ -44,7 +44,7 @@ fn set_privilege() -> io::Result<()> {
         let handle = scopeguard::guard(handle, |h| {
             c::CloseHandle(h);
         });
-        let mut tp: c::TOKEN_PRIVILEGES = mem::zeroed();
+        let mut tp: c::TOKEN_PRIVILEGES = zeroed();
         let name = SE_CREATE_SYMBOLIC_LINK_NAME.as_ptr();
         if c::LookupPrivilegeValueW(null(), name, &mut tp.Privileges[0].Luid) == 0 {
             return Err(io::Error::last_os_error());
@@ -110,7 +110,7 @@ pub fn set_reparse_point(handle: c::HANDLE, rdb: *mut c::REPARSE_DATA_BUFFER, le
 
 // See https://msdn.microsoft.com/en-us/library/windows/desktop/aa364560(v=vs.85).aspx
 pub fn delete_reparse_point(handle: c::HANDLE) -> io::Result<()> {
-    let mut rgdb: c::REPARSE_GUID_DATA_BUFFER = unsafe { mem::zeroed() };
+    let mut rgdb: c::REPARSE_GUID_DATA_BUFFER = unsafe { zeroed() };
     rgdb.ReparseTag = c::IO_REPARSE_TAG_MOUNT_POINT;
     let mut bytes_returned: u32 = 0;
 
