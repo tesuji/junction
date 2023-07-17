@@ -9,7 +9,6 @@ use std::os::windows::fs::OpenOptionsExt;
 use std::path::Path;
 use std::ptr::{addr_of_mut, null, null_mut};
 
-use scopeguard::ScopeGuard;
 pub(crate) use utf16::utf16s;
 
 use super::c;
@@ -57,14 +56,8 @@ fn set_privilege() -> io::Result<()> {
         if c::GetLastError() == ERROR_NOT_ALL_ASSIGNED {
             return Err(io::Error::from_raw_os_error(ERROR_NOT_ALL_ASSIGNED as i32));
         }
-
-        let handle = ScopeGuard::into_inner(handle);
-        if c::CloseHandle(handle) == 0 {
-            Err(io::Error::last_os_error())
-        } else {
-            Ok(())
-        }
     }
+    Ok(())
 }
 
 pub fn get_reparse_data_point(handle: c::HANDLE, rdb: *mut c::REPARSE_DATA_BUFFER) -> io::Result<()> {
