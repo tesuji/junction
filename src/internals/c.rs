@@ -48,15 +48,17 @@ pub const REPARSE_GUID_DATA_BUFFER_HEADER_SIZE: u16 = 24;
 pub const MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE: u16 = 8;
 
 // Safety checks for correct header size due to the lacks of `offset_of!`.
+// MSRV(1.57): for const assert!
+#[allow(clippy::no_effect)] // noisy clippy lints
 const _: () = {
     let rdb_header_size = size_of::<c_ulong>() + size_of::<c_ushort>() * 2;
-    assert!(rdb_header_size == REPARSE_DATA_BUFFER_HEADER_SIZE as _);
+    [(); 1][!(rdb_header_size == REPARSE_DATA_BUFFER_HEADER_SIZE as _) as usize];
 
     let mprb_header_size = size_of::<c_ushort>() * 4;
-    assert!(mprb_header_size == MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE as _);
+    [(); 1][!(mprb_header_size == MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE as _) as usize];
 
     let rgdb_header_size = size_of::<c_ulong>() + size_of::<c_ushort>() * 2 + size_of::<GUID>();
-    assert!(rgdb_header_size == REPARSE_GUID_DATA_BUFFER_HEADER_SIZE as _);
+    [(); 1][!(rgdb_header_size == REPARSE_GUID_DATA_BUFFER_HEADER_SIZE as _) as usize];
 };
 
 type VarLenArr<T> = [T; 1];
