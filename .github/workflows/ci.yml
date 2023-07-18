@@ -42,6 +42,7 @@ jobs:
       - run: cargo build
       - run: cargo build --all-targets
       - run: cargo test
+      - run: cargo test --no-default-features
       # NOTE: miri still needs to support more Windows API shims
       - if: false
         run: |
