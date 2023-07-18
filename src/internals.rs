@@ -28,12 +28,12 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     // We're using low-level APIs to create the junction, and these are more picky about paths.
     // For example, forward slashes cannot be used as a path separator, so we should try to
     // canonicalize the path first.
-    let mut target = helpers::get_full_path(target)?;
+    let target = helpers::get_full_path(target)?;
     fs::create_dir(junction)?;
     let file = helpers::open_reparse_point(junction, true)?;
-    // "\??\" + target
-    let len = NON_INTERPRETED_PATH_PREFIX.len().saturating_add(target.len());
     let target_len_in_bytes = {
+        // "\??\" + target
+        let len = NON_INTERPRETED_PATH_PREFIX.len().saturating_add(target.len());
         let min_len = cmp::min(len, u16::MAX as usize) as u16;
         // Len without `UNICODE_NULL` at the end
         let target_len_in_bytes = min_len.saturating_mul(WCHAR_SIZE);
@@ -43,9 +43,6 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
         }
         target_len_in_bytes
     };
-    let mut target_wchar: Vec<u16> = Vec::with_capacity(len);
-    target_wchar.extend(&NON_INTERPRETED_PATH_PREFIX);
-    target_wchar.append(&mut target);
 
     // Redefine the above char array into a ReparseDataBuffer we can work with
     let mut data = BytesAsReparseDataBuffer::new();
@@ -65,9 +62,18 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
 
         // Safe because we checked `MAX_AVAILABLE_PATH_BUFFER`
         copy_nonoverlapping(
-            target_wchar.as_ptr().cast::<u16>(),
-            addr_of_mut!((*rdb).ReparseBuffer.PathBuffer).cast(),
-            target_wchar.len(),
+            NON_INTERPRETED_PATH_PREFIX.as_ptr(),
+            addr_of_mut!((*rdb).ReparseBuffer.PathBuffer).cast::<u16>(),
+            NON_INTERPRETED_PATH_PREFIX.len(),
+        );
+        // TODO: Do we need to write the NULL-terminator byte?
+        // It looks like libuv does that.
+        copy_nonoverlapping(
+            target.as_ptr(),
+            addr_of_mut!((*rdb).ReparseBuffer.PathBuffer)
+                .cast::<u16>()
+                .add(NON_INTERPRETED_PATH_PREFIX.len()),
+            target.len(),
         );
 
         // Set the total size of the data buffer
