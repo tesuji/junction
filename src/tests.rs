@@ -196,17 +196,32 @@ fn exists_verify() {
 
 #[test]
 fn get_target_user_dirs() {
-    #[cfg(feature = "unstable_admin")]
-    // junction
-    assert_eq!(
-        super::get_target(r"C:\Users\Default User").unwrap().to_str(),
-        Some(r"C:\Users\Default"),
-    );
-    // junction with special permissions
-    assert_eq!(
-        super::get_target(r"C:\Documents and Settings\").unwrap().to_str(),
-        Some(r"C:\Users"),
-    );
+    use std::env;
+    if cfg!(feature = "unstable_admin") {
+        // These special system directory junction are from
+        // <https://en.wikipedia.org/wiki/NTFS_links#Built-in_uses>
+        assert_eq!(
+            super::get_target(r"C:\Users\Default User").unwrap().to_str(),
+            Some(r"C:\Users\Default"),
+        );
+        assert_eq!(
+            super::get_target(r"C:\Documents and Settings\").unwrap().to_str(),
+            Some(r"C:\Users"),
+        );
+        let user_profile = env::var("USERPROFILE").unwrap();
+        assert_eq!(
+            super::get_target(format!("{user}\\Application Data", user = user_profile))
+                .unwrap()
+                .to_str(),
+            Some(format!("{user}\\AppData\\Roaming", user = user_profile).as_str()),
+        );
+        assert_eq!(
+            super::get_target(format!("{user}\\My Documents\\My Pictures", user = user_profile))
+                .unwrap()
+                .to_str(),
+            Some(format!("{user}\\Pictures", user = user_profile).as_str()),
+        );
+    }
 
     let tmpdir = create_tempdir();
 
