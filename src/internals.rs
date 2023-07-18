@@ -92,6 +92,8 @@ pub fn exists(junction: &Path) -> io::Result<bool> {
     // Allocate enough space to fit the maximum sized reparse data buffer
     let mut data = BytesAsReparseDataBuffer::new();
     let rdb = data.as_mut_ptr();
+    // XXX: Could also use FindFirstFile to read the reparse point type
+    // Ref https://learn.microsoft.com/en-us/windows/win32/fileio/reparse-point-tags
     helpers::get_reparse_data_point(file.as_raw_handle() as isize, rdb)?;
     // SATETY: rdb should be initialized now
     let rdb = unsafe { &*rdb };

@@ -105,6 +105,7 @@ pub fn set_reparse_point(handle: c::HANDLE, rdb: *mut c::REPARSE_DATA_BUFFER, le
 
 // See https://msdn.microsoft.com/en-us/library/windows/desktop/aa364560(v=vs.85).aspx
 pub fn delete_reparse_point(handle: c::HANDLE) -> io::Result<()> {
+    // TODO: Should we use REPARSE_DATA_BUFFER instead?
     let mut rgdb: c::REPARSE_GUID_DATA_BUFFER = unsafe { zeroed() };
     rgdb.ReparseTag = c::IO_REPARSE_TAG_MOUNT_POINT;
     let mut bytes_returned: u32 = 0;
