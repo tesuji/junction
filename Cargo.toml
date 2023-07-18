@@ -15,6 +15,22 @@ readme = "README.md"
 repository = "https://github.com/lzutao/junction"
 description = "library for working with NTFS junctions"
 
+[features]
+default = ["unstable_admin"]
+# # Unstable flag
+#
+# Enable the SE_BACKUP_NAME and SE_RESTORE_NAME access privileges.
+# They are needed to open system directory junctions (such as
+# "C:\Documents and Settings") to read. For more info, please read
+# <https://en.wikipedia.org/wiki/NTFS_reparse_point#Directory_junctions>.
+#
+# Why is this flag unstable?
+#
+# Maybe it would be better to save and restore the old privileges
+# after setting SE_RESTORE_NAME. A user with SE_RESTORE_NAME privilege
+# could easily overwrite almost any file on the system.
+unstable_admin = []
+
 [package.metadata.docs.rs]
 targets = ["x86_64-pc-windows-msvc"]
 

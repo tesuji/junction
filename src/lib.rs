@@ -88,6 +88,7 @@ pub fn delete<P: AsRef<Path>>(junction: P) -> io::Result<()> {
 /// use std::io;
 /// # use junction::exists;
 /// fn main() -> io::Result<()> {
+///     # #[cfg(feature = "unstable_admin")]
 ///     assert!(exists(r"C:\Users\Default User")?);
 ///     Ok(())
 /// }
@@ -106,6 +107,7 @@ pub fn exists<P: AsRef<Path>>(junction: P) -> io::Result<bool> {
 /// use std::io;
 /// # use junction::get_target;
 /// fn main() -> io::Result<()> {
+///     # #[cfg(feature = "unstable_admin")]
 ///     assert_eq!(get_target(r"C:\Users\Default User")?.to_str(), Some(r"C:\Users\Default"));
 ///     Ok(())
 /// }

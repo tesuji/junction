@@ -25,14 +25,14 @@ pub fn open_reparse_point(reparse_point: &Path, write: bool) -> io::Result<File>
     // Opens existing directory path
     match opts.open(reparse_point) {
         Err(e) if e.kind() == io::ErrorKind::PermissionDenied => {
-            set_privilege()?;
+            set_privilege(write)?;
             opts.open(reparse_point)
         }
         other => other,
     }
 }
 
-fn set_privilege() -> io::Result<()> {
+fn set_privilege(write: bool) -> io::Result<()> {
     const ERROR_NOT_ALL_ASSIGNED: u32 = 1300;
     const TOKEN_PRIVILEGES_SIZE: u32 = size_of::<c::TOKEN_PRIVILEGES>() as _;
     unsafe {
@@ -43,15 +43,24 @@ fn set_privilege() -> io::Result<()> {
         let handle = scopeguard::guard(handle, |h| {
             c::CloseHandle(h);
         });
+        let name = if cfg!(feature = "unstable_admin") {
+            if write {
+                c::SE_RESTORE_NAME
+            } else {
+                c::SE_BACKUP_NAME
+            }
+        } else {
+            // FSCTL_SET_REPARSE_POINT requires SE_CREATE_SYMBOLIC_LINK_NAME privilege
+            // Ref <https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_set_reparse_point>
+            c::SE_CREATE_SYMBOLIC_LINK_NAME
+        };
         let mut tp: c::TOKEN_PRIVILEGES = zeroed();
-        // FSCTL_SET_REPARSE_POINT requires SE_CREATE_SYMBOLIC_LINK_NAME privilege
-        // Ref <https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_set_reparse_point>
-        let name = c::SE_CREATE_SYMBOLIC_LINK_NAME;
         if c::LookupPrivilegeValueW(null(), name, &mut tp.Privileges[0].Luid) == 0 {
             return Err(io::Error::last_os_error());
         }
-        tp.PrivilegeCount = 1;
         tp.Privileges[0].Attributes = c::SE_PRIVILEGE_ENABLED;
+        tp.PrivilegeCount = 1;
+
         if c::AdjustTokenPrivileges(*handle, c::FALSE, &tp, TOKEN_PRIVILEGES_SIZE, null_mut(), null_mut()) == 0 {
             return Err(io::Error::last_os_error());
         }

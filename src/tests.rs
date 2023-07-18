@@ -196,6 +196,7 @@ fn exists_verify() {
 
 #[test]
 fn get_target_user_dirs() {
+    #[cfg(feature = "unstable_admin")]
     // junction
     assert_eq!(
         super::get_target(r"C:\Users\Default User").unwrap().to_str(),
