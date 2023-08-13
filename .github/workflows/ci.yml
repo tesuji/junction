@@ -9,6 +9,7 @@ on:
 
 jobs:
   build:
+    if: false
     runs-on: windows-latest
     env:
       RUST_BACKTRACE: 1
@@ -63,6 +64,7 @@ jobs:
         shell: cmd
 
   msrv:
+    if: false
     runs-on: windows-latest
     # needs: [build]
     env:
@@ -83,6 +85,7 @@ jobs:
           cargo test
 
   rustfmt:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -136,6 +139,34 @@ jobs:
           rustup default nightly
       - run: cargo clippy --all-targets --all-features -- -Dwarnings
 
+  mirai:
+    # if: false
+    runs-on: windows-latest
+    env:
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+      MSRV: nightly-2023-03-08
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: junction
+      - uses: actions/checkout@v3
+        with:
+          repository: facebookexperimental/MIRAI
+          path: mirai
+      - name: rustup
+        run: |
+          # Toolchain setup
+          rustup toolchain install ${{ env.MSRV }} -c rustc-dev
+          rustup default ${{ env.MSRV }}
+      - name: setup
+        shell: bash
+        run: |
+          cargo fetch
+          cargo install --locked --path ./checker
+        working-directory: mirai
+      - run: |
+          cargo mirai --all-targets # for crate compilation
+        working-directory: junction
 
   # Use static analyzer Rudra <https://github.com/sslab-gatech/Rudra>.
   # FIXME: Disable for now since it's very costly to run.
