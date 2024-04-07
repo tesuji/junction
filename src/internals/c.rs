@@ -1,11 +1,13 @@
 #![allow(non_snake_case)]
 
+// MSRV(1.75): use `offset_of!` when stabilized.
+#[cfg(feature = "nightly")]
+mod nightly;
+
 use std::alloc::Layout;
-use std::mem::size_of;
 use std::os::raw::{c_ulong, c_ushort};
 use std::os::windows::io::RawHandle;
 
-use windows_sys::core::GUID;
 pub use windows_sys::Win32::Foundation::{
     CloseHandle, GetLastError, SetLastError, ERROR_INSUFFICIENT_BUFFER, FALSE, GENERIC_READ, GENERIC_WRITE, HANDLE,
     INVALID_HANDLE_VALUE,
@@ -39,7 +41,6 @@ const _: () = {
 };
 
 // NOTE: to use `size_of` operator, below structs should be packed.
-// TODO: use `offset_of!` when stabilized.
 /// Reparse Data Buffer header size
 pub const REPARSE_DATA_BUFFER_HEADER_SIZE: u16 = 8;
 /// Reparse GUID Data Buffer header size
@@ -47,18 +48,11 @@ pub const REPARSE_GUID_DATA_BUFFER_HEADER_SIZE: u16 = 24;
 /// MountPointReparseBuffer header size
 pub const MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE: u16 = 8;
 
-// Safety checks for correct header size due to the lacks of `offset_of!`.
-// MSRV(1.57): for const assert!
-#[allow(clippy::no_effect)] // noisy clippy lints
+#[cfg(feature = "nightly")]
 const _: () = {
-    let rdb_header_size = size_of::<c_ulong>() + size_of::<c_ushort>() * 2;
-    [(); 1][!(rdb_header_size == REPARSE_DATA_BUFFER_HEADER_SIZE as _) as usize];
-
-    let mprb_header_size = size_of::<c_ushort>() * 4;
-    [(); 1][!(mprb_header_size == MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE as _) as usize];
-
-    let rgdb_header_size = size_of::<c_ulong>() + size_of::<c_ushort>() * 2 + size_of::<GUID>();
-    [(); 1][!(rgdb_header_size == REPARSE_GUID_DATA_BUFFER_HEADER_SIZE as _) as usize];
+    assert!(REPARSE_DATA_BUFFER_HEADER_SIZE == nightly::REPARSE_DATA_BUFFER_HEADER_SIZE);
+    assert!(REPARSE_GUID_DATA_BUFFER_HEADER_SIZE == nightly::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE);
+    assert!(MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE == nightly::MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE);
 };
 
 type VarLenArr<T> = [T; 1];

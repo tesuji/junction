@@ -18,6 +18,8 @@ description = "library for working with NTFS junctions"
 
 [features]
 default = ["unstable_admin"]
+# Flag for trying out new rust language features
+nightly = []
 # # Unstable flag
 #
 # Enable the SE_BACKUP_NAME and SE_RESTORE_NAME access privileges.

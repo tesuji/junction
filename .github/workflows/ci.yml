@@ -134,7 +134,7 @@ jobs:
       - run: |
           rustup toolchain install nightly -c clippy
           rustup default nightly
-      - run: cargo clippy --all-targets --all-features -- -Dwarnings
+      - run: cargo clippy --all-targets --all-features -- -Dwarnings -A clippy::assertions-on-constants
 
 
   # Use static analyzer Rudra <https://github.com/sslab-gatech/Rudra>.
