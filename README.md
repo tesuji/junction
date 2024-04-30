@@ -6,7 +6,7 @@
 
 Library for working with [NTFS junctions][junction].
 
-As opposed to symlinks, junction does not require administrator privileges during creation.[perm]
+As opposed to symlinks, junction does not require [administrator privileges during creation][perm].
 (*However starting with Windows 10 Insiders build 14972, symlinks
 can be created without needing to elevate the console as
 administrator*)[^1][improvement].
