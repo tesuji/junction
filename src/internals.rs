@@ -97,12 +97,11 @@ pub fn exists(junction: &Path) -> io::Result<bool> {
     let file = helpers::open_reparse_point(junction, false)?;
     // Allocate enough space to fit the maximum sized reparse data buffer
     let mut data = BytesAsReparseDataBuffer::new();
-    let rdb = data.as_mut_ptr();
     // XXX: Could also use FindFirstFile to read the reparse point type
     // Ref https://learn.microsoft.com/en-us/windows/win32/fileio/reparse-point-tags
-    helpers::get_reparse_data_point(file.as_raw_handle() as isize, rdb)?;
+    helpers::get_reparse_data_point(file.as_raw_handle() as isize, data.as_mut_ptr())?;
     // SATETY: rdb should be initialized now
-    let rdb = unsafe { &*rdb };
+    let rdb = unsafe { data.assume_init() };
     // The reparse tag indicates if this is a junction or not
     Ok(rdb.ReparseTag == c::IO_REPARSE_TAG_MOUNT_POINT)
 }
@@ -114,10 +113,9 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
     }
     let file = helpers::open_reparse_point(junction, false)?;
     let mut data = BytesAsReparseDataBuffer::new();
-    let rdb = data.as_mut_ptr();
-    helpers::get_reparse_data_point(file.as_raw_handle() as isize, rdb)?;
+    helpers::get_reparse_data_point(file.as_raw_handle() as isize, data.as_mut_ptr())?;
     // SAFETY: rdb should be initialized now
-    let rdb = unsafe { &*rdb };
+    let rdb = unsafe { data.assume_init() };
     if rdb.ReparseTag == c::IO_REPARSE_TAG_MOUNT_POINT {
         let offset = rdb.ReparseBuffer.SubstituteNameOffset / WCHAR_SIZE;
         let len = rdb.ReparseBuffer.SubstituteNameLength / WCHAR_SIZE;
