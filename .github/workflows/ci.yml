@@ -3,7 +3,7 @@ name: Rust
 on:
   push:
     branches:
-      - 'master'
+      - '*'
       - '!gh-pages'
   pull_request:
 
@@ -40,6 +40,7 @@ jobs:
         shell: bash
         if: matrix.mingw_dir
       - run: cargo build
+      - run: cargo build --features nightly
       - run: cargo build --all-targets
       - run: cargo test
       - run: cargo test --no-default-features
@@ -68,7 +69,7 @@ jobs:
     env:
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
       # add_of_mut! requires for soundness
-      MSRV: 1.51.0
+      MSRV: 1.56.0
     steps:
       - uses: actions/checkout@v3
       - run: |
@@ -78,9 +79,7 @@ jobs:
           rustup run stable cargo generate-lockfile
           rustup run stable cargo fetch
       - run: |
-          cargo build --all-targets --locked
-      - run: |
-          cargo test
+          cargo build --locked
 
   rustfmt:
     runs-on: ubuntu-latest

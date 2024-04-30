@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Fixed` for any bug fixes.
 * `Security` in case of vulnerabilities.
 -->
+## [v1.1.0] - 2024-04-30
+### Change MSRV from 1.51 to 1.56
+
+windows-sys bump to 1.56 when they switch to 2021 edition.
+As a dependent of that crate, we have no choice but to follow.
 
 ## [v1.0.0] - 2023-02-26
 ### First major version
@@ -57,6 +62,7 @@ It signals that the API is mature enough to be stable for a long time.
 
 First release
 
+[v1.0.0]: https://github.com/lzutao/junction/compare/v1.0.0...v1.1.0
 [v1.0.0]: https://github.com/lzutao/junction/compare/v0.2.1...v1.0.0
 [v0.2.1]: https://github.com/lzutao/junction/compare/v0.2.0...v0.2.1
 [v0.2.0]: https://github.com/lzutao/junction/compare/v0.1.0...v0.2.0
