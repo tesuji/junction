@@ -12,7 +12,7 @@ an application accessing `D:\SYMLINK\DRIVERS` would in reality be accessing
 */
 #![doc(html_root_url = "https://docs.rs/junction/~1")]
 #![cfg(windows)]
-#![deny(rust_2018_idioms)]
+#![deny(rust_2021_idioms)]
 
 mod internals;
 
