@@ -138,7 +138,7 @@ jobs:
   rudra:
     runs-on: ubuntu-latest
     env:
-      MSRV: nightly-2021-08-20
+      MSRV: nightly-2021-10-21
       WIN_TARGET: x86_64-pc-windows-gnu
     steps:
       - uses: actions/checkout@v4
