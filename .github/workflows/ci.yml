@@ -42,6 +42,7 @@ jobs:
           echo "C:\mingw\${{ matrix.mingw_dir }}\bin" >> $GITHUB_PATH
         shell: bash
         if: matrix.mingw_dir
+      - run: cargo fetch
       - run: cargo build
       - run: cargo build --features nightly
       - run: cargo build --all-targets
