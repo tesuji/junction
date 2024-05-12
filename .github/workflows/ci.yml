@@ -7,8 +7,8 @@ on:
       - '!gh-pages'
   pull_request:
 
-# rust 1.68
 env:
+  # rust 1.68
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
 
 jobs:
@@ -135,7 +135,6 @@ jobs:
   # Use static analyzer Rudra <https://github.com/sslab-gatech/Rudra>.
   # FIXME: Disable for now since it's very costly to run.
   rudra:
-    if: false
     runs-on: ubuntu-latest
     env:
       MSRV: nightly-2021-08-20
