@@ -165,6 +165,8 @@ jobs:
           export RUSTFLAGS="-L ${RUDRA_LIB}"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${RUDRA_LIB}"
 
+          ls -l "$RUDRA_LIB"
+
           echo "RUDRA_RUNNER_HOME=${RUDRA_RUNNER_HOME}" >> $GITHUB_ENV
           echo "RUDRA_RUST_CHANNEL=${RUDRA_RUST_CHANNEL}" >> $GITHUB_ENV
           echo "RUSTFLAGS=${RUSTFLAGS}" >> $GITHUB_ENV
