@@ -91,10 +91,6 @@ jobs:
 
   rustdoc:
     runs-on: windows-latest
-    env:
-      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
-    if: github.event_name != 'pull_request' && github.event.ref == 'refs/heads/master'
-    needs: [build]
     steps:
       - name: Before checking out source and change \n -> \r\n
         run: |
@@ -106,24 +102,31 @@ jobs:
           rustup default nightly
       - run: cargo doc --all --no-deps # --document-private-items
       - run: echo '<meta http-equiv=refresh content=0;url=junction/index.html>' > target/doc/index.html
-      - name: Commit docs to gh-pages branch
-        working-directory: target/doc
-        run: |
-          # Bypassing Jekyll on GitHub Pages
-          touch .nojekyll
-          REV=$(git rev-parse --short HEAD)
-          git init
-          git config user.name "Actions"
-          git config user.email ""
-          git add -A .
-          # git add --renormalize .
-          git commit -qm "Documentation for ${{github.repository}}@${REV}"
-        shell: bash
-      - name: Push gh-pages to GitHub
-        working-directory: target/doc
-        run: |
-          git remote add upstream https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git push -q upstream HEAD:gh-pages --force
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages
+          path: target/doc
+          retention-days: 1
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.event.ref == 'refs/heads/master'
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+    # Deploy to the github-pages environment
+    # environment:
+    #   name: github-pages
+    #   url: ${{ steps.deployment.outputs.page_url }}
+    needs: [rustdoc]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages
 
   clippy:
     runs-on: windows-latest
