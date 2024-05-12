@@ -148,7 +148,7 @@ jobs:
         with:
           repository: sslab-gatech/Rudra
           path: Rudra
-      - name: setup
+      - name: setup env
         shell: bash
         run: |
           # Toolchain setup
@@ -170,7 +170,7 @@ jobs:
           echo "RUSTFLAGS=${RUSTFLAGS}" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}" >> $GITHUB_ENV
         working-directory: Rudra
-      - name: run
+      - name: install cargo-rudra
         run: |
           ./install-release.sh
         shell: bash
