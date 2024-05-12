@@ -7,12 +7,15 @@ on:
       - '!gh-pages'
   pull_request:
 
+# rust 1.68
+env:
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+
 jobs:
   build:
     runs-on: windows-latest
     env:
       RUST_BACKTRACE: 1
-      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
       MINGW_URL: https://ci-mirrors.rust-lang.org/rustc
       MIRIFLAGS: -Zmiri-disable-isolation
     strategy:
@@ -67,7 +70,6 @@ jobs:
     runs-on: windows-latest
     # needs: [build]
     env:
-      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
       # add_of_mut! requires for soundness
       MSRV: 1.56.0
     steps:
@@ -126,8 +128,6 @@ jobs:
   clippy:
     runs-on: windows-latest
     needs: [build]
-    env:
-      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
     steps:
       - uses: actions/checkout@v4
       - run: |
@@ -142,7 +142,6 @@ jobs:
     if: false
     runs-on: ubuntu-latest
     env:
-      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
       MSRV: nightly-2021-08-20
       WIN_TARGET: x86_64-pc-windows-gnu
     steps:
