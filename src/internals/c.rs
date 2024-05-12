@@ -36,8 +36,8 @@ const _: () = {
     let std_layout = Layout::new::<RawHandle>();
     let win_sys_layout = Layout::new::<HANDLE>();
     // MSVR(Rust v1.57): use assert! instead
-    [(); 1][!(std_layout.size() == win_sys_layout.size()) as usize];
-    [(); 1][!(std_layout.align() == win_sys_layout.align()) as usize];
+    [(); 1][std_layout.size() - win_sys_layout.size()];
+    [(); 1][std_layout.align() - win_sys_layout.align()];
 };
 
 // NOTE: to use `size_of` operator, below structs should be packed.
