@@ -39,7 +39,7 @@ Quoted from [Computer Hope](https://www.computerhope.com/jargon/j/junction.htm):
 All the code in this repository is released under the MIT License,
 for more information, please read COPYRIGHT file.
 
-[actions-badge]: https://github.com/lzutao/junction/workflows/Rust/badge.svg?branchName=master
+[actions-badge]: https://github.com/lzutao/junction/workflows/Rust/badge.svg?branchName=main
 [actions-url]: https://github.com/lzutao/junction/actions
 [junction]: https://learn.microsoft.com/en-us/windows/win32/fileio/hard-links-and-junctions#junctions
 [perm]: https://en.wikipedia.org/wiki/NTFS_links#Restrictions_and_drawbacks
