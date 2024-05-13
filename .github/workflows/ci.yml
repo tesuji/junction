@@ -138,19 +138,17 @@ jobs:
     # if: false
     runs-on: windows-latest
     env:
-      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
-      MSRV: nightly-2023-03-08
+      MSRV: nightly-2023-09-10
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: junction
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: facebookexperimental/MIRAI
           path: mirai
       - name: rustup
         run: |
-          # Toolchain setup
           rustup toolchain install ${{ env.MSRV }} -c rustc-dev
           rustup default ${{ env.MSRV }}
       - name: setup
