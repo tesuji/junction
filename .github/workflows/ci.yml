@@ -152,14 +152,15 @@ jobs:
           rustup toolchain install ${{ env.MSRV }} -c rustc-dev
           rustup default ${{ env.MSRV }}
       - name: setup
+        working-directory: mirai
         shell: bash
         run: |
           cargo fetch
           cargo install --locked --path ./checker
-        working-directory: mirai
-      - run: |
-          cargo mirai --all-targets # for crate compilation
+      - name: mirai check
         working-directory: junction
+        run: |
+          cargo mirai --all-targets # for crate compilation
 
   # Use static analyzer Rudra <https://github.com/sslab-gatech/Rudra>.
   # FIXME: Disable for now since it's very costly to run.
