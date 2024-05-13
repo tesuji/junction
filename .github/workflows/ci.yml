@@ -149,6 +149,7 @@ jobs:
           path: mirai
       - name: rustup
         run: |
+          rustup set auto-self-update disable
           rustup toolchain install ${{ env.MSRV }} -c rustc-dev
           rustup default ${{ env.MSRV }}
       - name: setup
