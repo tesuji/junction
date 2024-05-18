@@ -50,7 +50,7 @@ fn set_privilege(write: bool) -> io::Result<()> {
                 c::SE_BACKUP_NAME
             }
         } else {
-            // FSCTL_SET_REPARSE_POINT requires SE_CREATE_SYMBOLIC_LINK_NAME privilege
+            // FSCTL_SET_REPARSE_POINT requires below privilege.
             // Ref <https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_set_reparse_point>
             c::SE_CREATE_SYMBOLIC_LINK_NAME
         };

@@ -30,12 +30,11 @@ pub use windows_sys::Win32::System::IO::DeviceIoControl;
 
 // Makes sure layout of RawHandle and windows-sys's HANDLE are the same
 // for pointer casts between them.
-// CLIPPY: nonsense suggestions for assert!
 #[allow(clippy::unnecessary_operation)]
 const _: () = {
     let std_layout = Layout::new::<RawHandle>();
     let win_sys_layout = Layout::new::<HANDLE>();
-    // MSVR(Rust v1.57): use assert! instead
+    // MSRV(Rust v1.57): use assert! instead
     [(); 1][std_layout.size() - win_sys_layout.size()];
     [(); 1][std_layout.align() - win_sys_layout.align()];
 };
@@ -49,6 +48,7 @@ pub const REPARSE_GUID_DATA_BUFFER_HEADER_SIZE: u16 = 24;
 pub const MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE: u16 = 8;
 
 #[cfg(feature = "nightly")]
+#[allow(clippy::assertions_on_constants)]
 const _: () = {
     assert!(REPARSE_DATA_BUFFER_HEADER_SIZE == nightly::REPARSE_DATA_BUFFER_HEADER_SIZE);
     assert!(REPARSE_GUID_DATA_BUFFER_HEADER_SIZE == nightly::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE);
