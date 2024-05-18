@@ -7,8 +7,8 @@ on:
       - '!gh-pages'
   pull_request:
 
-# rust 1.68
 env:
+  # rust 1.68
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
 
 jobs:
@@ -16,17 +16,22 @@ jobs:
     runs-on: windows-latest
     env:
       RUST_BACKTRACE: 1
-      MINGW_URL: https://ci-mirrors.rust-lang.org/rustc
       MIRIFLAGS: -Zmiri-disable-isolation
+      # taken from <rustc/src/ci/scripts/install-mingw.sh>.
+      MIRRORS_BASE: https://ci-mirrors.rust-lang.org/rustc
     strategy:
       matrix:
-        target: [x86_64-pc-windows-msvc, i686-pc-windows-msvc, x86_64-pc-windows-gnu, i686-pc-windows-gnu]
+        target:
+          - x86_64-pc-windows-msvc
+          - i686-pc-windows-msvc
+          - x86_64-pc-windows-gnu
+          - i686-pc-windows-gnu
         include:
           - target: x86_64-pc-windows-gnu
-            archive: x86_64-6.3.0-release-posix-seh-rt_v5-rev2.7z
+            archive: i686-12.2.0-release-posix-dwarf-rt_v10-rev0.7z
             mingw_dir: mingw64
           - target: i686-pc-windows-gnu
-            archive: i686-6.3.0-release-posix-dwarf-rt_v5-rev2.7z
+            archive: x86_64-12.2.0-release-posix-seh-rt_v10-rev0.7z
             mingw_dir: mingw32
     steps:
       - uses: actions/checkout@v4
@@ -37,8 +42,9 @@ jobs:
       - name: Check out MinGW toolchain
         run: |
           set -x
-          curl -sSf -O "${MINGW_URL}/${{ matrix.archive }}"
+          curl -sSf -O "$MIRRORS_BASE/${{ matrix.archive }}"
           7z x -y "${{ matrix.archive }}" -o/c/mingw
+          ls -l "/c/mingw/${{ matrix.mingw_dir }}/bin"
           rm "${{ matrix.archive }}"
           echo "C:\mingw\${{ matrix.mingw_dir }}\bin" >> $GITHUB_PATH
         shell: bash
@@ -132,6 +138,7 @@ jobs:
           rustup set auto-self-update disable
           rustup toolchain install nightly -c clippy
           rustup default nightly
+      - run: cargo fetch
       - run: cargo clippy --all-targets --all-features -- -Dwarnings -A clippy::assertions-on-constants
 
 

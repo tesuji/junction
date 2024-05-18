@@ -17,6 +17,8 @@ description = "library for working with NTFS junctions"
 
 [features]
 default = ["unstable_admin"]
+# # Unstable flag
+#
 # Flag for trying out new rust language features
 nightly = []
 # # Unstable flag
