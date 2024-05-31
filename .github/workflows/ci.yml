@@ -40,6 +40,10 @@ jobs:
           rustup toolchain install stable-${{ matrix.target }}
           rustup default stable-${{ matrix.target }}
       - name: Check out MinGW toolchain
+        # NOTE: The self-contained rust-mingw is enough for linking to Windows.
+        # Full MinGW toolchain is only needed when compiling C code.
+        #if: matrix.mingw_dir
+        if: false
         run: |
           set -x
           curl -sSf -O "$MIRRORS_BASE/${{ matrix.archive }}"
@@ -48,7 +52,6 @@ jobs:
           ls -l "/c/mingw/${{ matrix.mingw_dir }}/bin"
           echo "C:\mingw\${{ matrix.mingw_dir }}\bin" >> $GITHUB_PATH
         shell: bash
-        if: matrix.mingw_dir
       - run: cargo fetch
       - run: cargo build
       - run: cargo build --features nightly
