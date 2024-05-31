@@ -121,7 +121,7 @@ jobs:
           retention-days: 1
 
   deploy:
-    if: github.event_name != 'pull_request' && github.event.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request' && github.event.ref == 'refs/heads/main'
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
       pages: write      # to deploy to Pages
