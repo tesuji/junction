@@ -28,10 +28,10 @@ jobs:
           - i686-pc-windows-gnu
         include:
           - target: x86_64-pc-windows-gnu
-            archive: i686-12.2.0-release-posix-dwarf-rt_v10-rev0.7z
+            archive: x86_64-12.2.0-release-posix-seh-rt_v10-rev0.7z
             mingw_dir: mingw64
           - target: i686-pc-windows-gnu
-            archive: x86_64-12.2.0-release-posix-seh-rt_v10-rev0.7z
+            archive: i686-12.2.0-release-posix-dwarf-rt_v10-rev0.7z
             mingw_dir: mingw32
     steps:
       - uses: actions/checkout@v4
@@ -44,8 +44,8 @@ jobs:
           set -x
           curl -sSf -O "$MIRRORS_BASE/${{ matrix.archive }}"
           7z x -y "${{ matrix.archive }}" -o/c/mingw
-          ls -l "/c/mingw/${{ matrix.mingw_dir }}/bin"
           rm "${{ matrix.archive }}"
+          ls -l "/c/mingw/${{ matrix.mingw_dir }}/bin"
           echo "C:\mingw\${{ matrix.mingw_dir }}\bin" >> $GITHUB_PATH
         shell: bash
         if: matrix.mingw_dir
