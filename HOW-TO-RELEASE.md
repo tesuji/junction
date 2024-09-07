@@ -19,6 +19,6 @@
   ```bash
   VER_NUM=v1.x.x
   git tag -as $VER_NUM -m $VER_NUM
-  git push origin master
+  git push origin main
   git push origin $VER_NUM
   ```
