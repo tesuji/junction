@@ -22,7 +22,7 @@ Quoted from [Computer Hope](https://www.computerhope.com/jargon/j/junction.htm):
 
 ### Minimal Supported Rust versions
 
-1.56.0
+1.57.0
 
 ## All relevant references
 

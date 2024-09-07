@@ -1,10 +1,10 @@
 [package]
 name = "junction"
-version = "1.1.0" # Also update `html_root_url` in lib.rs
+version = "1.2.0" # Also update `html_root_url` in lib.rs
 authors = ["Lzu Tao <taolzu@gmail.com>"]
 categories = ["api-bindings", "os::windows-apis"]
 edition = "2021"
-rust-version = "1.56"
+rust-version = "1.57"
 exclude = [
     "/.github",
     "/HOW-TO-RELEASE.md",

@@ -81,8 +81,8 @@ jobs:
     runs-on: windows-latest
     # needs: [build]
     env:
-      # add_of_mut! requires for soundness
-      MSRV: 1.56.0
+      # assert! in consts
+      MSRV: 1.57.0
     steps:
       - uses: actions/checkout@v4
       - run: |

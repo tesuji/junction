@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Fixed` for any bug fixes.
 * `Security` in case of vulnerabilities.
 -->
+## [v1.2.0] - 2024-09-08
+### Change MSRV from 1.56 to 1.57
+Minor refactorings to abuse assertions in constants that Rust 1.57.0 allows.
+
 ## [v1.1.0] - 2024-04-30
 ### Change MSRV from 1.51 to 1.56
 
@@ -62,7 +66,8 @@ It signals that the API is mature enough to be stable for a long time.
 
 First release
 
-[v1.0.0]: https://github.com/lzutao/junction/compare/v1.0.0...v1.1.0
+[v1.2.0]: https://github.com/lzutao/junction/compare/v1.1.0...v1.2.0
+[v1.1.0]: https://github.com/lzutao/junction/compare/v1.0.0...v1.1.0
 [v1.0.0]: https://github.com/lzutao/junction/compare/v0.2.1...v1.0.0
 [v0.2.1]: https://github.com/lzutao/junction/compare/v0.2.0...v0.2.1
 [v0.2.0]: https://github.com/lzutao/junction/compare/v0.1.0...v0.2.0

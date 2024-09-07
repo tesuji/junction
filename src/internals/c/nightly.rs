@@ -1,4 +1,4 @@
-#![allow(unused)]
+#![expect(unused)]
 
 use std::mem::offset_of;
 
