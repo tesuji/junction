@@ -60,21 +60,17 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
         addr_of_mut!((*rdb).ReparseBuffer.PrintNameOffset).write(target_len_in_bytes + UNICODE_NULL_SIZE);
         addr_of_mut!((*rdb).ReparseBuffer.PrintNameLength).write(0);
 
+        let mut path_buffer_ptr: *mut u16 = addr_of_mut!((*rdb).ReparseBuffer.PathBuffer).cast();
         // Safe because we checked `MAX_AVAILABLE_PATH_BUFFER`
         copy_nonoverlapping(
             NON_INTERPRETED_PATH_PREFIX.as_ptr(),
-            addr_of_mut!((*rdb).ReparseBuffer.PathBuffer).cast::<u16>(),
+            path_buffer_ptr,
             NON_INTERPRETED_PATH_PREFIX.len(),
         );
         // TODO: Do we need to write the NULL-terminator byte?
         // It looks like libuv does that.
-        copy_nonoverlapping(
-            target.as_ptr(),
-            addr_of_mut!((*rdb).ReparseBuffer.PathBuffer)
-                .cast::<u16>()
-                .add(NON_INTERPRETED_PATH_PREFIX.len()),
-            target.len(),
-        );
+        path_buffer_ptr = path_buffer_ptr.add(NON_INTERPRETED_PATH_PREFIX.len());
+        copy_nonoverlapping(target.as_ptr(), path_buffer_ptr, target.len());
 
         // Set the total size of the data buffer
         let size = target_len_in_bytes.wrapping_add(c::MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE + 2 * UNICODE_NULL_SIZE);
