@@ -10,13 +10,16 @@ pub struct BytesAsReparseDataBuffer {
     value: Box<[MaybeU8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize]>,
 }
 
+// Asserts that pointers of `BytesAsReparseDataBuffer` can be casted to
+// `REPARSE_DATA_BUFFER`.
 const _: () = {
     let a = align_of::<BytesAsReparseDataBuffer>();
     let b = align_of::<REPARSE_DATA_BUFFER>();
-    [(); 1][!((a % b) == 0) as usize]
+    assert!((a % b) == 0);
 };
 
 impl BytesAsReparseDataBuffer {
+    // MSRV(1.82): Use `Box::new_uninit_slice` instead.
     pub fn new() -> Self {
         type Raw = [MaybeU8; MAXIMUM_REPARSE_DATA_BUFFER_SIZE as usize];
         const LAYOUT: Layout = Layout::new::<Raw>();
