@@ -78,12 +78,12 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
         size.wrapping_add(c::REPARSE_DATA_BUFFER_HEADER_SIZE)
     };
 
-    helpers::set_reparse_point(file.as_raw_handle() as isize, rdb, u32::from(in_buffer_size))
+    helpers::set_reparse_point(file.as_raw_handle(), rdb, u32::from(in_buffer_size))
 }
 
 pub fn delete(junction: &Path) -> io::Result<()> {
     let file = helpers::open_reparse_point(junction, true)?;
-    helpers::delete_reparse_point(file.as_raw_handle() as isize)
+    helpers::delete_reparse_point(file.as_raw_handle())
 }
 
 pub fn exists(junction: &Path) -> io::Result<bool> {
@@ -95,7 +95,7 @@ pub fn exists(junction: &Path) -> io::Result<bool> {
     let mut data = BytesAsReparseDataBuffer::new();
     // XXX: Could also use FindFirstFile to read the reparse point type
     // Ref https://learn.microsoft.com/en-us/windows/win32/fileio/reparse-point-tags
-    helpers::get_reparse_data_point(file.as_raw_handle() as isize, data.as_mut_ptr())?;
+    helpers::get_reparse_data_point(file.as_raw_handle(), data.as_mut_ptr())?;
     // SATETY: rdb should be initialized now
     let rdb = unsafe { data.assume_init() };
     // The reparse tag indicates if this is a junction or not
@@ -109,7 +109,7 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
     }
     let file = helpers::open_reparse_point(junction, false)?;
     let mut data = BytesAsReparseDataBuffer::new();
-    helpers::get_reparse_data_point(file.as_raw_handle() as isize, data.as_mut_ptr())?;
+    helpers::get_reparse_data_point(file.as_raw_handle(), data.as_mut_ptr())?;
     // SAFETY: rdb should be initialized now
     let rdb = unsafe { data.assume_init() };
     if rdb.ReparseTag == c::IO_REPARSE_TAG_MOUNT_POINT {
