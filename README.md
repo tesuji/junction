@@ -22,7 +22,7 @@ Quoted from [Computer Hope](https://www.computerhope.com/jargon/j/junction.htm):
 
 ### Minimal Supported Rust versions
 
-1.57.0
+Specified in the `rust-version` field in `Cargo.toml`.
 
 ## All relevant references
 
