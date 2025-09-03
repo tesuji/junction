@@ -1,10 +1,10 @@
 [package]
 name = "junction"
-version = "1.2.0" # Also update `html_root_url` in lib.rs
+version = "1.3.0" # Also update `html_root_url` in lib.rs
 authors = ["Lzu Tao <taolzu@gmail.com>"]
 categories = ["api-bindings", "os::windows-apis"]
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.60"
 exclude = [
     "/.github",
     "/HOW-TO-RELEASE.md",
@@ -43,7 +43,7 @@ version = "1"
 default-features = false
 
 [target.'cfg(windows)'.dependencies.windows-sys]
-version = "0.52"
+version = "0.60"
 default-features = false
 features = [
     "Win32_System_Ioctl",
@@ -56,8 +56,4 @@ features = [
 ]
 
 [dev-dependencies]
-tempfile = "=3.8.0"
-# NOTE: rustix is used by tempfile, to force tempfile use an old version
-# of it that is compatible with MSRV.
-# MSRV: v0.38.9+ has newer dep:core syntax that old rustc (<1.60) confuses.
-rustix = "=0.38.9"
+tempfile = "3.21.0"
