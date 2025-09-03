@@ -1,5 +1,3 @@
-#![expect(unused)]
-
 use std::mem::offset_of;
 
 /// Reparse Data Buffer header size
