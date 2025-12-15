@@ -245,3 +245,22 @@ fn get_target_user_dirs() {
         other => panic!("target path is not a junction point: {:?}", other),
     }
 }
+
+#[test]
+fn create_with_verbatim_prefix_paths() {
+    // Regression test for https://github.com/tesuji/junction/issues/30
+    let tmpdir = create_tempdir();
+
+    let target = tmpdir.path().join("target");
+    let link_parent = tmpdir.path().join("links");
+    fs::create_dir_all(&target).unwrap();
+    fs::create_dir_all(&link_parent).unwrap();
+
+    // std::fs::canonicalize() returns paths with \\?\ verbatim prefix on Windows
+    let target = fs::canonicalize(&target).unwrap();
+    let junction = fs::canonicalize(&link_parent).unwrap().join("junction");
+
+    super::create(&target, &junction).unwrap();
+    assert!(super::exists(&junction).unwrap(), "junction should exist");
+    assert_eq!(super::get_target(&junction).unwrap(), target);
+}
