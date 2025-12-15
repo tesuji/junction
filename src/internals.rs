@@ -29,6 +29,9 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     // For example, forward slashes cannot be used as a path separator, so we should try to
     // canonicalize the path first.
     let target = helpers::get_full_path(target)?;
+    // Strip Win32 verbatim prefix (\\?\) if present - we add NT prefix (\??\) ourselves
+    const VERBATIM_PREFIX: [u16; 4] = helpers::utf16s(br"\\?\");
+    let target = target.strip_prefix(VERBATIM_PREFIX.as_slice()).unwrap_or(&target);
     fs::create_dir(junction)?;
     let file = helpers::open_reparse_point(junction, true)?;
     let target_len_in_bytes = {
