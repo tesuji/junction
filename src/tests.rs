@@ -257,10 +257,11 @@ fn create_with_verbatim_prefix_paths() {
     fs::create_dir_all(&link_parent).unwrap();
 
     // std::fs::canonicalize() returns paths with \\?\ verbatim prefix on Windows
-    let target = fs::canonicalize(&target).unwrap();
+    let target_canonical = fs::canonicalize(&target).unwrap();
     let junction = fs::canonicalize(&link_parent).unwrap().join("junction");
 
-    super::create(&target, &junction).unwrap();
+    super::create(&target_canonical, &junction).unwrap();
     assert!(super::exists(&junction).unwrap(), "junction should exist");
+    // get_target returns path without verbatim prefix
     assert_eq!(super::get_target(&junction).unwrap(), target);
 }
