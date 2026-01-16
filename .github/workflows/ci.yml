@@ -26,6 +26,7 @@ jobs:
           - i686-pc-windows-msvc
           - x86_64-pc-windows-gnu
           - i686-pc-windows-gnu
+          # - x86_64-pc-windows-gnullvm
         include:
           - target: x86_64-pc-windows-gnu
             archive: x86_64-12.2.0-release-posix-seh-rt_v10-rev0.7z
@@ -82,7 +83,7 @@ jobs:
     # needs: [build]
     env:
       # windows-sys MSRV
-      MSRV: 1.60.0
+      MSRV: 1.71.0
     steps:
       - uses: actions/checkout@v4
       - run: |
