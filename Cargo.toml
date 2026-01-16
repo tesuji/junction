@@ -43,7 +43,7 @@ version = "1"
 default-features = false
 
 [target.'cfg(windows)'.dependencies.windows-sys]
-version = "0.60"
+version = ">=0.59, <=0.61"
 default-features = false
 features = [
     "Win32_System_Ioctl",
