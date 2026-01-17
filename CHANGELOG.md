@@ -25,9 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Fixed` for any bug fixes.
 * `Security` in case of vulnerabilities.
 -->
+## [v1.4.0] - 2026-01-17
+### Change MSRV from 1.60 to 1.71
+This is the same MSRV that our direct dependency `windows-sys` requires (#32).
+
 ## [v1.3.0] - 2025-09-03
 ### Change MSRV from 1.57 to 1.60
-This is the same MSRV that our direct dependency `windows-sys` requires (pr#29).
+This is the same MSRV that our direct dependency `windows-sys` requires (#29).
 
 ## [v1.2.0] - 2024-09-08
 ### Change MSRV from 1.56 to 1.57
@@ -70,6 +74,7 @@ It signals that the API is mature enough to be stable for a long time.
 
 First release
 
+[v1.4.0]: https://github.com/lzutao/junction/compare/v1.3.0...v1.4.0
 [v1.3.0]: https://github.com/lzutao/junction/compare/v1.2.0...v1.3.0
 [v1.2.0]: https://github.com/lzutao/junction/compare/v1.1.0...v1.2.0
 [v1.1.0]: https://github.com/lzutao/junction/compare/v1.0.0...v1.1.0
