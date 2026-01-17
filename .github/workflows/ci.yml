@@ -26,14 +26,21 @@ jobs:
           - i686-pc-windows-msvc
           - x86_64-pc-windows-gnu
           - i686-pc-windows-gnu
-          # - x86_64-pc-windows-gnullvm
+          - x86_64-pc-windows-gnullvm
+          # - aarch64-pc-windows-msvc
         include:
           - target: x86_64-pc-windows-gnu
-            archive: x86_64-12.2.0-release-posix-seh-rt_v10-rev0.7z
+            archive: x86_64-14.1.0-release-posix-seh-msvcrt-rt_v12-rev0.7z
             mingw_dir: mingw64
           - target: i686-pc-windows-gnu
-            archive: i686-12.2.0-release-posix-dwarf-rt_v10-rev0.7z
+            archive: i686-14.1.0-release-posix-dwarf-msvcrt-rt_v12-rev0.7z
             mingw_dir: mingw32
+          - target: x86_64-pc-windows-gnullvm
+            archive: llvm-mingw-20251104-ucrt-x86_64.zip
+            mingw_dir: llvm-mingw-20251104-ucrt-x86_64
+          # - target: aarch64-pc-windows-gnullvm
+            # archive: llvm-mingw-20251104-ucrt-aarch64.zip
+            # mingw_dir: llvm-mingw-20251104-ucrt-aarch64
     steps:
       - uses: actions/checkout@v4
       - run: |
@@ -44,7 +51,7 @@ jobs:
         # NOTE: The self-contained rust-mingw is enough for linking to Windows.
         # Full MinGW toolchain is only needed when compiling C code.
         #if: matrix.mingw_dir
-        if: false
+        if: contains(matrix.target, 'gnullvm')
         run: |
           set -x
           curl -sSf -O "$MIRRORS_BASE/${{ matrix.archive }}"
