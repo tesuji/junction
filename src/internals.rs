@@ -14,7 +14,11 @@ use cast::BytesAsReparseDataBuffer;
 
 /// This prefix indicates to NTFS that the path is to be treated as a non-interpreted
 /// path in the virtual file system.
-const NON_INTERPRETED_PATH_PREFIX: [u16; 4] = helpers::utf16s(br"\??\");
+/// Ref: <https://learn.microsoft.com/windows-hardware/drivers/kernel/object-manager>
+const NT_PREFIX: [u16; 4] = helpers::utf16s(br"\??\");
+/// Disables normalization and bypasses MAX_PATH.
+/// Ref: <https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry>
+const VERBATIM_PREFIX: [u16; 4] = helpers::utf16s(br"\\?\");
 
 const WCHAR_SIZE: u16 = size_of::<u16>() as _;
 
@@ -30,13 +34,12 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     // canonicalize the path first.
     let target = helpers::get_full_path(target)?;
     // Strip Win32 verbatim prefix (\\?\) if present - we add NT prefix (\??\) ourselves
-    const VERBATIM_PREFIX: [u16; 4] = helpers::utf16s(br"\\?\");
     let target = target.strip_prefix(VERBATIM_PREFIX.as_slice()).unwrap_or(&target);
     fs::create_dir(junction)?;
     let file = helpers::open_reparse_point(junction, true)?;
     let target_len_in_bytes = {
         // "\??\" + target
-        let len = NON_INTERPRETED_PATH_PREFIX.len().saturating_add(target.len());
+        let len = NT_PREFIX.len().saturating_add(target.len());
         let min_len = cmp::min(len, u16::MAX as usize) as u16;
         // Len without `UNICODE_NULL` at the end
         let target_len_in_bytes = min_len.saturating_mul(WCHAR_SIZE);
@@ -65,14 +68,10 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
 
         let mut path_buffer_ptr: *mut u16 = addr_of_mut!((*rdb).ReparseBuffer.PathBuffer).cast();
         // Safe because we checked `MAX_AVAILABLE_PATH_BUFFER`
-        copy_nonoverlapping(
-            NON_INTERPRETED_PATH_PREFIX.as_ptr(),
-            path_buffer_ptr,
-            NON_INTERPRETED_PATH_PREFIX.len(),
-        );
+        copy_nonoverlapping(NT_PREFIX.as_ptr(), path_buffer_ptr, NT_PREFIX.len());
         // TODO: Do we need to write the NULL-terminator byte?
         // It looks like libuv does that.
-        path_buffer_ptr = path_buffer_ptr.add(NON_INTERPRETED_PATH_PREFIX.len());
+        path_buffer_ptr = path_buffer_ptr.add(NT_PREFIX.len());
         copy_nonoverlapping(target.as_ptr(), path_buffer_ptr, target.len());
 
         // Set the total size of the data buffer
@@ -123,7 +122,7 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
             slice::from_raw_parts(buf, len as usize)
         };
         // In case of "\??\C:\foo\bar"
-        let wide = wide.strip_prefix(&NON_INTERPRETED_PATH_PREFIX).unwrap_or(wide);
+        let wide = wide.strip_prefix(&NT_PREFIX).unwrap_or(wide);
         Ok(PathBuf::from(OsString::from_wide(wide)))
     } else {
         Err(io::Error::new(io::ErrorKind::Other, "not a reparse tag mount point"))
