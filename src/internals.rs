@@ -174,9 +174,11 @@ mod tests {
         create(&target, &junction).unwrap();
 
         // Read back the raw reparse data
-        let file = helpers::open_reparse_point(&junction, false).unwrap();
         let mut data = cast::BytesAsReparseDataBuffer::new();
-        helpers::get_reparse_data_point(file.as_raw_handle(), data.as_mut_ptr()).unwrap();
+        {
+            let file = helpers::open_reparse_point(&junction, false).unwrap();
+            helpers::get_reparse_data_point(file.as_raw_handle(), data.as_mut_ptr()).unwrap();
+        }
         let rdb = unsafe { data.assume_init() };
 
         assert_eq!(rdb.ReparseTag, c::IO_REPARSE_TAG_MOUNT_POINT);
