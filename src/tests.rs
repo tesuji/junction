@@ -1,8 +1,13 @@
+use std::ffi::OsString;
 use std::fs::{self, File};
 use std::io::{self, Write};
+use std::os::windows::ffi::OsStringExt;
 use std::os::windows::fs::symlink_file;
+use std::os::windows::io::AsRawHandle;
 #[cfg(miri)]
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
+use std::slice;
 
 #[cfg(not(miri))]
 use tempfile::TempDir;
@@ -264,4 +269,44 @@ fn create_with_verbatim_prefix_paths() {
     assert!(super::exists(&junction).unwrap(), "junction should exist");
     // get_target returns path without verbatim prefix
     assert_eq!(super::get_target(&junction).unwrap(), target);
+}
+
+#[test]
+fn create_populates_print_name() {
+    // Regression test: the junction reparse point must have a non-empty PrintName
+    // so that Windows Container layer snapshots correctly preserve the junction target.
+    use super::internals::{c, cast, helpers, WCHAR_SIZE};
+
+    let tmpdir = tempfile::tempdir().unwrap();
+    let target = tmpdir.path().join("target");
+    let junction = tmpdir.path().join("junction");
+    fs::create_dir_all(&target).unwrap();
+
+    super::create(&target, &junction).unwrap();
+
+    // Read back the raw reparse data
+    let mut data = cast::BytesAsReparseDataBuffer::new();
+    {
+        let file = helpers::open_reparse_point(&junction, false).unwrap();
+        helpers::get_reparse_data_point(file.as_raw_handle(), data.as_mut_ptr()).unwrap();
+    }
+    let rdb = unsafe { data.assume_init() };
+
+    assert_eq!(rdb.ReparseTag, c::IO_REPARSE_TAG_MOUNT_POINT);
+
+    // Read PrintName
+    let print_offset = (rdb.ReparseBuffer.PrintNameOffset / WCHAR_SIZE) as usize;
+    let print_len = (rdb.ReparseBuffer.PrintNameLength / WCHAR_SIZE) as usize;
+    let print_name = unsafe {
+        let buf = rdb.ReparseBuffer.PathBuffer.as_ptr().add(print_offset);
+        slice::from_raw_parts(buf, print_len)
+    };
+
+    // PrintName must not be empty
+    assert!(print_len > 0, "PrintName must not be empty");
+
+    // PrintName should match what get_target returns (the Win32 path without \??\ prefix)
+    let print_path = PathBuf::from(OsString::from_wide(print_name));
+    let target_path = super::get_target(&junction).unwrap();
+    assert_eq!(print_path, target_path, "PrintName should match the target path");
 }
