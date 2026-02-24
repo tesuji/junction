@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Fixed` for any bug fixes.
 * `Security` in case of vulnerabilities.
 -->
+## [v1.4.2] - 2026-02-24
+### Fixed
+* Fix the empty `PrintName` causes junctions to break in Windows Containers (WCoW) during layer serialization. Thank *Zanie Blue* in #33 for the report and the quick fix.
+
 ## [v1.4.1] - 2026-01-17
 ### Fixed
 * Junction creation failed silently with verbatim `\\?\` prefix paths (#31) by @DK26.
@@ -78,15 +82,16 @@ It signals that the API is mature enough to be stable for a long time.
 
 First release
 
-[v1.4.1]: https://github.com/lzutao/junction/compare/v1.4.0...v1.4.1
-[v1.4.0]: https://github.com/lzutao/junction/compare/v1.3.0...v1.4.0
-[v1.3.0]: https://github.com/lzutao/junction/compare/v1.2.0...v1.3.0
-[v1.2.0]: https://github.com/lzutao/junction/compare/v1.1.0...v1.2.0
-[v1.1.0]: https://github.com/lzutao/junction/compare/v1.0.0...v1.1.0
-[v1.0.0]: https://github.com/lzutao/junction/compare/v0.2.1...v1.0.0
-[v0.2.1]: https://github.com/lzutao/junction/compare/v0.2.0...v0.2.1
-[v0.2.0]: https://github.com/lzutao/junction/compare/v0.1.0...v0.2.0
-[v0.1.5]: https://github.com/lzutao/junction/compare/v0.1.4...v0.1.5
-[v0.1.4]: https://github.com/lzutao/junction/compare/v0.1.3...v0.1.4
-[v0.1.3]: https://github.com/lzutao/junction/compare/v0.1.0...v0.1.3
-[v0.1.0]: https://github.com/lzutao/junction/releases/tag/v0.1.0
+[v1.4.2]: https://github.com/tesuji/junction/compare/v1.4.1...v1.4.2
+[v1.4.1]: https://github.com/tesuji/junction/compare/v1.4.0...v1.4.1
+[v1.4.0]: https://github.com/tesuji/junction/compare/v1.3.0...v1.4.0
+[v1.3.0]: https://github.com/tesuji/junction/compare/v1.2.0...v1.3.0
+[v1.2.0]: https://github.com/tesuji/junction/compare/v1.1.0...v1.2.0
+[v1.1.0]: https://github.com/tesuji/junction/compare/v1.0.0...v1.1.0
+[v1.0.0]: https://github.com/tesuji/junction/compare/v0.2.1...v1.0.0
+[v0.2.1]: https://github.com/tesuji/junction/compare/v0.2.0...v0.2.1
+[v0.2.0]: https://github.com/tesuji/junction/compare/v0.1.0...v0.2.0
+[v0.1.5]: https://github.com/tesuji/junction/compare/v0.1.4...v0.1.5
+[v0.1.4]: https://github.com/tesuji/junction/compare/v0.1.3...v0.1.4
+[v0.1.3]: https://github.com/tesuji/junction/compare/v0.1.0...v0.1.3
+[v0.1.0]: https://github.com/tesuji/junction/releases/tag/v0.1.0
