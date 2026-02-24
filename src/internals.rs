@@ -1,6 +1,6 @@
-mod c;
-mod cast;
-mod helpers;
+pub(crate) mod c;
+pub(crate) mod cast;
+pub(crate) mod helpers;
 
 use std::ffi::OsString;
 use std::mem::size_of;
@@ -20,7 +20,7 @@ const NT_PREFIX: [u16; 4] = helpers::utf16s(br"\??\");
 /// Ref: <https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry>
 const VERBATIM_PREFIX: [u16; 4] = helpers::utf16s(br"\\?\");
 
-const WCHAR_SIZE: u16 = size_of::<u16>() as _;
+pub(crate) const WCHAR_SIZE: u16 = size_of::<u16>() as _;
 
 pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     const UNICODE_NULL_SIZE: u16 = WCHAR_SIZE;
@@ -150,53 +150,5 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
         Ok(PathBuf::from(OsString::from_wide(wide)))
     } else {
         Err(io::Error::new(io::ErrorKind::Other, "not a reparse tag mount point"))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::ffi::OsString;
-    use std::os::windows::ffi::OsStringExt;
-    use std::os::windows::io::AsRawHandle;
-    use std::{fs, slice};
-
-    use super::*;
-
-    #[test]
-    fn create_populates_print_name() {
-        // Regression test: the junction reparse point must have a non-empty PrintName
-        // so that Windows Container layer snapshots correctly preserve the junction target.
-        let tmpdir = tempfile::tempdir().unwrap();
-        let target = tmpdir.path().join("target");
-        let junction = tmpdir.path().join("junction");
-        fs::create_dir_all(&target).unwrap();
-
-        create(&target, &junction).unwrap();
-
-        // Read back the raw reparse data
-        let mut data = cast::BytesAsReparseDataBuffer::new();
-        {
-            let file = helpers::open_reparse_point(&junction, false).unwrap();
-            helpers::get_reparse_data_point(file.as_raw_handle(), data.as_mut_ptr()).unwrap();
-        }
-        let rdb = unsafe { data.assume_init() };
-
-        assert_eq!(rdb.ReparseTag, c::IO_REPARSE_TAG_MOUNT_POINT);
-
-        // Read PrintName
-        let print_offset = (rdb.ReparseBuffer.PrintNameOffset / WCHAR_SIZE) as usize;
-        let print_len = (rdb.ReparseBuffer.PrintNameLength / WCHAR_SIZE) as usize;
-        let print_name = unsafe {
-            let buf = rdb.ReparseBuffer.PathBuffer.as_ptr().add(print_offset);
-            slice::from_raw_parts(buf, print_len)
-        };
-
-        // PrintName must not be empty
-        assert!(print_len > 0, "PrintName must not be empty");
-
-        // PrintName should match what get_target returns (the Win32 path without \??\ prefix)
-        let print_path = PathBuf::from(OsString::from_wide(print_name));
-        let target_path = get_target(&junction).unwrap();
-        assert_eq!(print_path, target_path, "PrintName should match the target path");
     }
 }
