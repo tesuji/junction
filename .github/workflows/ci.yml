@@ -3,13 +3,15 @@ name: Rust
 on:
   push:
     branches:
-      - '*'
-      - '!gh-pages'
+      - "*"
+      - "!gh-pages"
   pull_request:
 
 env:
   # rust 1.68
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+
+permissions: {}
 
 jobs:
   build:
@@ -39,10 +41,12 @@ jobs:
             archive: llvm-mingw-20251104-ucrt-x86_64.zip
             mingw_dir: llvm-mingw-20251104-ucrt-x86_64
           # - target: aarch64-pc-windows-gnullvm
-            # archive: llvm-mingw-20251104-ucrt-aarch64.zip
-            # mingw_dir: llvm-mingw-20251104-ucrt-aarch64
+          # archive: llvm-mingw-20251104-ucrt-aarch64.zip
+          # mingw_dir: llvm-mingw-20251104-ucrt-aarch64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - run: |
           rustup set auto-self-update disable
           rustup toolchain install stable-${{ matrix.target }}
@@ -92,7 +96,9 @@ jobs:
       # windows-sys MSRV
       MSRV: 1.71.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - run: |
           rustup set auto-self-update disable
           rustup toolchain install ${{ env.MSRV }}
@@ -105,7 +111,9 @@ jobs:
   rustfmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - run: cargo fmt -- --check
 
   rustdoc:
@@ -115,7 +123,9 @@ jobs:
         run: |
           git config --global core.autocrlf false
           git config --global core.eol lf
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - run: |
           rustup set auto-self-update disable
           rustup toolchain install nightly
@@ -123,7 +133,7 @@ jobs:
       - run: cargo doc --all --no-deps # --document-private-items
       - run: echo '<meta http-equiv=refresh content=0;url=junction/index.html>' > target/doc/index.html
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: target/doc
           retention-days: 1
@@ -132,19 +142,21 @@ jobs:
     if: github.event_name != 'pull_request' && github.event.ref == 'refs/heads/main'
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
+      pages: write # to deploy to Pages
+      id-token: write # to verify the deployment originates from an appropriate source
     needs: [rustdoc]
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
 
   clippy:
     runs-on: windows-latest
     needs: [build]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - run: |
           rustup set auto-self-update disable
           rustup toolchain install nightly -c clippy
@@ -161,13 +173,15 @@ jobs:
       MSRV: nightly-2021-08-20
       WIN_TARGET: x86_64-pc-windows-gnu
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           path: junction
-      - uses: actions/checkout@v4
+          persist-credentials: false
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           repository: sslab-gatech/Rudra
           path: Rudra
+          persist-credentials: false
       - name: setup
         shell: bash
         run: |
