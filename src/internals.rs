@@ -129,10 +129,6 @@ pub fn exists(junction: &Path) -> io::Result<bool> {
 }
 
 pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
-    // MSRV(1.63): use Path::try_exists instead
-    if !junction.exists() {
-        return Err(io::Error::new(io::ErrorKind::NotFound, "`junction` does not exist"));
-    }
     let file = helpers::open_reparse_point(junction, false)?;
     let mut data = BytesAsReparseDataBuffer::new();
     helpers::get_reparse_data_point(file.as_raw_handle(), data.as_mut_ptr())?;
