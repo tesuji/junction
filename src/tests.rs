@@ -252,6 +252,20 @@ fn get_target_user_dirs() {
 }
 
 #[test]
+fn get_target_target_no_exist() {
+    let tmpdir = create_tempdir();
+
+    let target = tmpdir.path().join("target");
+    let junction = tmpdir.path().join("junction");
+
+    super::create(&target, &junction).unwrap();
+    match super::get_target(&junction) {
+        Ok(t) => assert_eq!(t, target),
+        other => panic!("get_target should succeed when target does not exist: {:?}", other),
+    }
+}
+
+#[test]
 fn create_with_verbatim_prefix_paths() {
     // Regression test for https://github.com/tesuji/junction/issues/30
     let tmpdir = create_tempdir();
