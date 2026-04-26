@@ -99,6 +99,8 @@ pub fn exists<P: AsRef<Path>>(junction: P) -> io::Result<bool> {
 
 /// Gets the target of the specified junction point.
 ///
+/// This returns the target path of the junction point, even if the target does not exist.
+///
 /// N.B. Only works on NTFS.
 ///
 /// # Example
