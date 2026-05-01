@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Fixed` for any bug fixes.
 * `Security` in case of vulnerabilities.
 -->
+## [v2.0.0] - 2026-05-01
+### Changed
+* `junction::get_target` now doesn't check whether the junction's destination directory exists.
+  See #34 for more information.
+
 ## [v1.4.2] - 2026-02-24
 ### Fixed
 * Fix the empty `PrintName` causes junctions to break in Windows Containers (WCoW) during layer serialization. Thank *Zanie Blue* in #33 for the report and the quick fix.
@@ -82,6 +87,7 @@ It signals that the API is mature enough to be stable for a long time.
 
 First release
 
+[v2.0.0]: https://github.com/tesuji/junction/compare/v1.4.2..v2.0.0
 [v1.4.2]: https://github.com/tesuji/junction/compare/v1.4.1...v1.4.2
 [v1.4.1]: https://github.com/tesuji/junction/compare/v1.4.0...v1.4.1
 [v1.4.0]: https://github.com/tesuji/junction/compare/v1.3.0...v1.4.0
