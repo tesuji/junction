@@ -27,9 +27,9 @@ jobs:
           - x86_64-pc-windows-msvc
           - i686-pc-windows-msvc
           - x86_64-pc-windows-gnu
-          - i686-pc-windows-gnu
           - x86_64-pc-windows-gnullvm
           # - aarch64-pc-windows-msvc
+          # - i686-pc-windows-gnu
         include:
           - target: x86_64-pc-windows-gnu
             archive: x86_64-14.1.0-release-posix-seh-msvcrt-rt_v12-rev0.7z
