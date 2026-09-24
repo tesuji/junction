@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Fixed` for any bug fixes.
 * `Security` in case of vulnerabilities.
 -->
+## [v2.1.0] - 2026-09-24
+### Change MSRV from 1.71 to 1.85
+This is the same rust version on current debian stable (trixie). Bumping MSRV allows us using edition 2024.
+
 ## [v2.0.0] - 2026-05-01
 ### Changed
 * `junction::get_target` now doesn't check whether the junction's destination directory exists.
@@ -87,6 +91,7 @@ It signals that the API is mature enough to be stable for a long time.
 
 First release
 
+[v2.1.0]: https://github.com/tesuji/junction/compare/v2.0.0..v2.1.0
 [v2.0.0]: https://github.com/tesuji/junction/compare/v1.4.2..v2.0.0
 [v1.4.2]: https://github.com/tesuji/junction/compare/v1.4.1...v1.4.2
 [v1.4.1]: https://github.com/tesuji/junction/compare/v1.4.0...v1.4.1
