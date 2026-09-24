@@ -1,10 +1,7 @@
 #![allow(non_snake_case)]
 
-// MSRV(1.75): use `offset_of!` when stabilized.
-#[cfg(feature = "nightly")]
-mod nightly;
-
 use std::alloc::Layout;
+use std::mem::offset_of;
 use std::os::raw::{c_ulong, c_ushort};
 use std::os::windows::io::RawHandle;
 
@@ -38,21 +35,12 @@ const _: () = {
     assert!(std_layout.align() == win_sys_layout.align());
 };
 
-// NOTE: to use `size_of` operator, below structs should be packed.
 /// Reparse Data Buffer header size
-pub const REPARSE_DATA_BUFFER_HEADER_SIZE: u16 = 8;
+pub const REPARSE_DATA_BUFFER_HEADER_SIZE: u16 = offset_of!(REPARSE_DATA_BUFFER, ReparseBuffer) as u16;
 /// Reparse GUID Data Buffer header size
-pub const REPARSE_GUID_DATA_BUFFER_HEADER_SIZE: u16 = 24;
+pub const REPARSE_GUID_DATA_BUFFER_HEADER_SIZE: u16 = offset_of!(REPARSE_GUID_DATA_BUFFER, GenericReparseBuffer) as u16;
 /// MountPointReparseBuffer header size
-pub const MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE: u16 = 8;
-
-#[cfg(feature = "nightly")]
-#[allow(clippy::assertions_on_constants)]
-const _: () = {
-    assert!(REPARSE_DATA_BUFFER_HEADER_SIZE == nightly::REPARSE_DATA_BUFFER_HEADER_SIZE);
-    assert!(REPARSE_GUID_DATA_BUFFER_HEADER_SIZE == nightly::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE);
-    assert!(MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE == nightly::MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE);
-};
+pub const MOUNT_POINT_REPARSE_BUFFER_HEADER_SIZE: u16 = offset_of!(MountPointReparseBuffer, PathBuffer) as u16;
 
 type VarLenArr<T> = [T; 1];
 

@@ -8,7 +8,6 @@ on:
   pull_request:
 
 env:
-  # rust 1.68
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
 
 permissions: {}
@@ -93,7 +92,7 @@ jobs:
     runs-on: windows-latest
     # needs: [build]
     env:
-      # windows-sys MSRV
+      # trixie (current debian stable)
       MSRV: 1.85.0
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1

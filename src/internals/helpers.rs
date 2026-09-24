@@ -119,10 +119,7 @@ pub fn delete_reparse_point(handle: c::HANDLE) -> io::Result<()> {
         c::DeviceIoControl(
             handle,
             c::FSCTL_DELETE_REPARSE_POINT,
-            #[cfg(feature = "nightly")]
             (&raw mut rgdb).cast(),
-            #[cfg(not(feature = "nightly"))]
-            core::ptr::addr_of_mut!(rgdb).cast(),
             u32::from(c::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE),
             null_mut(),
             0,
