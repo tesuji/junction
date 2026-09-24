@@ -1,4 +1,4 @@
-use std::alloc::{alloc, handle_alloc_error, Layout};
+use std::alloc::{Layout, alloc, handle_alloc_error};
 use std::mem::align_of;
 
 use super::c::{MAXIMUM_REPARSE_DATA_BUFFER_SIZE, REPARSE_DATA_BUFFER};
@@ -37,7 +37,7 @@ impl BytesAsReparseDataBuffer {
         self.value.as_mut_ptr().cast::<REPARSE_DATA_BUFFER>()
     }
 
-    pub unsafe fn assume_init(&mut self) -> &REPARSE_DATA_BUFFER { unsafe {
-        &*self.as_mut_ptr()
-    }}
+    pub unsafe fn assume_init(&mut self) -> &REPARSE_DATA_BUFFER {
+        unsafe { &*self.as_mut_ptr() }
+    }
 }
