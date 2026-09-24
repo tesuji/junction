@@ -7,7 +7,7 @@ use std::mem::{MaybeUninit, size_of, zeroed};
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::fs::OpenOptionsExt;
 use std::path::Path;
-use std::ptr::{addr_of_mut, null, null_mut};
+use std::ptr::{self, null, null_mut};
 
 pub(crate) use utf16::utf16s;
 
