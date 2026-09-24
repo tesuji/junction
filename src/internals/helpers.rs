@@ -7,7 +7,7 @@ use std::mem::{MaybeUninit, size_of, zeroed};
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::fs::OpenOptionsExt;
 use std::path::Path;
-use std::ptr::{self, null, null_mut};
+use std::ptr::{null, null_mut};
 
 pub(crate) use utf16::utf16s;
 
@@ -122,7 +122,7 @@ pub fn delete_reparse_point(handle: c::HANDLE) -> io::Result<()> {
             #[cfg(feature = "nightly")]
             (&raw mut rgdb).cast(),
             #[cfg(not(feature = "nightly"))]
-            ptr::addr_of_mut!(rgdb).cast(),
+            core::ptr::addr_of_mut!(rgdb).cast(),
             u32::from(c::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE),
             null_mut(),
             0,
