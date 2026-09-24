@@ -148,6 +148,6 @@ pub fn get_target(junction: &Path) -> io::Result<PathBuf> {
         let wide = wide.strip_prefix(&NT_PREFIX).unwrap_or(wide);
         Ok(PathBuf::from(OsString::from_wide(wide)))
     } else {
-        Err(io::Error::new(io::ErrorKind::Other, "not a reparse tag mount point"))
+        Err(io::Error::other("not a reparse tag mount point"))
     }
 }
