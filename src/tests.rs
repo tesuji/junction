@@ -289,7 +289,7 @@ fn create_with_verbatim_prefix_paths() {
 fn create_populates_print_name() {
     // Regression test: the junction reparse point must have a non-empty PrintName
     // so that Windows Container layer snapshots correctly preserve the junction target.
-    use super::internals::{c, cast, helpers, WCHAR_SIZE};
+    use super::internals::{WCHAR_SIZE, c, cast, helpers};
 
     let tmpdir = tempfile::tempdir().unwrap();
     let target = tmpdir.path().join("target");
