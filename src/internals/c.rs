@@ -9,8 +9,8 @@ use std::os::raw::{c_ulong, c_ushort};
 use std::os::windows::io::RawHandle;
 
 pub use windows_sys::Win32::Foundation::{
-    CloseHandle, GetLastError, SetLastError, ERROR_INSUFFICIENT_BUFFER, FALSE, GENERIC_READ, GENERIC_WRITE, HANDLE,
-    INVALID_HANDLE_VALUE,
+    CloseHandle, ERROR_INSUFFICIENT_BUFFER, FALSE, GENERIC_READ, GENERIC_WRITE, GetLastError, HANDLE,
+    INVALID_HANDLE_VALUE, SetLastError,
 };
 pub use windows_sys::Win32::Security::{
     AdjustTokenPrivileges, LookupPrivilegeValueW, SE_PRIVILEGE_ENABLED, TOKEN_ADJUST_PRIVILEGES, TOKEN_PRIVILEGES,
@@ -18,15 +18,15 @@ pub use windows_sys::Win32::Security::{
 // See more in <https://learn.microsoft.com/en-us/windows/win32/secauthz/privilege-constants>.
 pub use windows_sys::Win32::Security::{SE_BACKUP_NAME, SE_CREATE_SYMBOLIC_LINK_NAME, SE_RESTORE_NAME};
 pub use windows_sys::Win32::Storage::FileSystem::{
-    GetFullPathNameW, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
+    FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, GetFullPathNameW, MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
     REPARSE_GUID_DATA_BUFFER,
 };
+pub use windows_sys::Win32::System::IO::DeviceIoControl;
 pub use windows_sys::Win32::System::Ioctl::{
     FSCTL_DELETE_REPARSE_POINT, FSCTL_GET_REPARSE_POINT, FSCTL_SET_REPARSE_POINT,
 };
 pub use windows_sys::Win32::System::SystemServices::IO_REPARSE_TAG_MOUNT_POINT;
 pub use windows_sys::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
-pub use windows_sys::Win32::System::IO::DeviceIoControl;
 
 // Makes sure layout of RawHandle and windows-sys's HANDLE are the same
 // for pointer casts between them.

@@ -3,11 +3,11 @@ mod utf16;
 use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};
 use std::io;
-use std::mem::{size_of, zeroed, MaybeUninit};
+use std::mem::{MaybeUninit, size_of, zeroed};
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::fs::OpenOptionsExt;
 use std::path::Path;
-use std::ptr::{addr_of_mut, null, null_mut};
+use std::ptr::{null, null_mut};
 
 pub(crate) use utf16::utf16s;
 
@@ -44,11 +44,7 @@ fn set_privilege(write: bool) -> io::Result<()> {
             c::CloseHandle(h);
         });
         let name = if cfg!(feature = "unstable_admin") {
-            if write {
-                c::SE_RESTORE_NAME
-            } else {
-                c::SE_BACKUP_NAME
-            }
+            if write { c::SE_RESTORE_NAME } else { c::SE_BACKUP_NAME }
         } else {
             // FSCTL_SET_REPARSE_POINT requires below privilege.
             // Ref <https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_set_reparse_point>
@@ -123,7 +119,7 @@ pub fn delete_reparse_point(handle: c::HANDLE) -> io::Result<()> {
         c::DeviceIoControl(
             handle,
             c::FSCTL_DELETE_REPARSE_POINT,
-            addr_of_mut!(rgdb).cast(),
+            core::ptr::addr_of_mut!(rgdb).cast(),
             u32::from(c::REPARSE_GUID_DATA_BUFFER_HEADER_SIZE),
             null_mut(),
             0,

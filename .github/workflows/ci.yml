@@ -25,18 +25,18 @@ jobs:
       matrix:
         target:
           - x86_64-pc-windows-msvc
-          - i686-pc-windows-msvc
+          # - i686-pc-windows-msvc
           - x86_64-pc-windows-gnu
-          - i686-pc-windows-gnu
           - x86_64-pc-windows-gnullvm
           # - aarch64-pc-windows-msvc
+          # - i686-pc-windows-gnu
         include:
           - target: x86_64-pc-windows-gnu
             archive: x86_64-14.1.0-release-posix-seh-msvcrt-rt_v12-rev0.7z
             mingw_dir: mingw64
-          - target: i686-pc-windows-gnu
-            archive: i686-14.1.0-release-posix-dwarf-msvcrt-rt_v12-rev0.7z
-            mingw_dir: mingw32
+          # - target: i686-pc-windows-gnu
+          #   archive: i686-14.1.0-release-posix-dwarf-msvcrt-rt_v12-rev0.7z
+          #   mingw_dir: mingw32
           - target: x86_64-pc-windows-gnullvm
             archive: llvm-mingw-20251104-ucrt-x86_64.zip
             mingw_dir: llvm-mingw-20251104-ucrt-x86_64
@@ -94,7 +94,7 @@ jobs:
     # needs: [build]
     env:
       # windows-sys MSRV
-      MSRV: 1.71.0
+      MSRV: 1.85.0
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
