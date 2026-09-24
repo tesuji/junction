@@ -24,7 +24,7 @@ jobs:
       matrix:
         target:
           - x86_64-pc-windows-msvc
-          # - i686-pc-windows-msvc
+          - i686-pc-windows-msvc
           - x86_64-pc-windows-gnu
           - x86_64-pc-windows-gnullvm
           # - aarch64-pc-windows-msvc
@@ -48,8 +48,7 @@ jobs:
           persist-credentials: false
       - run: |
           rustup set auto-self-update disable
-          rustup toolchain install stable-${{ matrix.target }}
-          rustup default stable-${{ matrix.target }}
+          rustup target add ${{ matrix.target }}
       - name: Check out MinGW toolchain
         # NOTE: The self-contained rust-mingw is enough for linking to Windows.
         # Full MinGW toolchain is only needed when compiling C code.
@@ -64,11 +63,11 @@ jobs:
           echo "C:\mingw\${{ matrix.mingw_dir }}\bin" >> $GITHUB_PATH
         shell: bash
       - run: cargo fetch
-      - run: cargo build
-      - run: cargo build --features nightly
-      - run: cargo build --all-targets
-      - run: cargo test
-      - run: cargo test --no-default-features
+      - run: cargo build --target ${{ matrix.target }}
+      - run: cargo build --target ${{ matrix.target }} --features nightly
+      - run: cargo build --target ${{ matrix.target }} --all-targets
+      - run: cargo test --target ${{ matrix.target }}
+      - run: cargo test --target ${{ matrix.target }} --no-default-features
       # NOTE: miri still needs to support more Windows API shims
       - if: false
         run: |
