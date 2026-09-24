@@ -3,15 +3,14 @@ name = "junction"
 version = "2.0.0" # Also update `html_root_url` in lib.rs
 authors = ["Lzu Tao <taolzu@gmail.com>"]
 categories = ["api-bindings", "os::windows-apis"]
-edition = "2021"
-rust-version = "1.71"
+edition = "2024"
+rust-version = "1.85"
 exclude = [
     "/.github",
     "/HOW-TO-RELEASE.md",
 ]
 keywords = ["junction", "symlink"]
 license = "MIT"
-readme = "README.md"
 repository = "https://github.com/tesuji/junction"
 description = "library for working with NTFS junctions"
 

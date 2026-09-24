@@ -37,7 +37,7 @@ impl BytesAsReparseDataBuffer {
         self.value.as_mut_ptr().cast::<REPARSE_DATA_BUFFER>()
     }
 
-    pub unsafe fn assume_init(&mut self) -> &REPARSE_DATA_BUFFER {
+    pub unsafe fn assume_init(&mut self) -> &REPARSE_DATA_BUFFER { unsafe {
         &*self.as_mut_ptr()
-    }
+    }}
 }
