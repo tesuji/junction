@@ -7,7 +7,7 @@ use std::mem::size_of;
 use std::os::windows::ffi::OsStringExt;
 use std::os::windows::io::AsRawHandle;
 use std::path::{Path, PathBuf};
-use std::ptr::{addr_of_mut, copy_nonoverlapping};
+use std::ptr::copy_nonoverlapping;
 use std::{cmp, fs, io, slice};
 
 use cast::BytesAsReparseDataBuffer;
@@ -64,18 +64,18 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
     let rdb = data.as_mut_ptr();
     let in_buffer_size: u16 = unsafe {
         // Set the type of reparse point we are creating
-        addr_of_mut!((*rdb).ReparseTag).write(c::IO_REPARSE_TAG_MOUNT_POINT);
-        addr_of_mut!((*rdb).Reserved).write(0);
+        (&raw mut (*rdb).ReparseTag).write(c::IO_REPARSE_TAG_MOUNT_POINT);
+        (&raw mut (*rdb).Reserved).write(0);
 
         // SubstituteName starts at offset 0 in PathBuffer
-        addr_of_mut!((*rdb).ReparseBuffer.SubstituteNameOffset).write(0);
-        addr_of_mut!((*rdb).ReparseBuffer.SubstituteNameLength).write(substitute_len_in_bytes);
+        (&raw mut (*rdb).ReparseBuffer.SubstituteNameOffset).write(0);
+        (&raw mut (*rdb).ReparseBuffer.SubstituteNameLength).write(substitute_len_in_bytes);
 
         // PrintName starts right after SubstituteName + its null terminator
-        addr_of_mut!((*rdb).ReparseBuffer.PrintNameOffset).write(substitute_len_in_bytes + UNICODE_NULL_SIZE);
-        addr_of_mut!((*rdb).ReparseBuffer.PrintNameLength).write(print_name_len_in_bytes);
+        (&raw mut (*rdb).ReparseBuffer.PrintNameOffset).write(substitute_len_in_bytes + UNICODE_NULL_SIZE);
+        (&raw mut (*rdb).ReparseBuffer.PrintNameLength).write(print_name_len_in_bytes);
 
-        let mut path_buffer_ptr: *mut u16 = addr_of_mut!((*rdb).ReparseBuffer.PathBuffer).cast();
+        let mut path_buffer_ptr: *mut u16 = (&raw mut (*rdb).ReparseBuffer.PathBuffer).cast();
 
         // Write SubstituteName: "\??\" + target
         copy_nonoverlapping(NT_PREFIX.as_ptr(), path_buffer_ptr, NT_PREFIX.len());
@@ -100,7 +100,7 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
             + UNICODE_NULL_SIZE
             + print_name_len_in_bytes
             + UNICODE_NULL_SIZE;
-        addr_of_mut!((*rdb).ReparseDataLength).write(size);
+        (&raw mut (*rdb).ReparseDataLength).write(size);
         size.wrapping_add(c::REPARSE_DATA_BUFFER_HEADER_SIZE)
     };
 
