@@ -75,6 +75,9 @@ pub fn create(target: &Path, junction: &Path) -> io::Result<()> {
         addr_of_mut!((*rdb).ReparseBuffer.PrintNameOffset).write(substitute_len_in_bytes + UNICODE_NULL_SIZE);
         addr_of_mut!((*rdb).ReparseBuffer.PrintNameLength).write(print_name_len_in_bytes);
 
+        #[cfg(feature = "nightly")]
+        let mut path_buffer_ptr: *mut u16 = (&raw mut (*rdb).ReparseBuffer.PathBuffer).cast();
+        #[cfg(not(feature = "nightly"))]
         let mut path_buffer_ptr: *mut u16 = addr_of_mut!((*rdb).ReparseBuffer.PathBuffer).cast();
 
         // Write SubstituteName: "\??\" + target
