@@ -39,8 +39,8 @@ Specified in the `rust-version` field in `Cargo.toml`.
 All the code in this repository is released under the MIT License,
 for more information, please read COPYRIGHT file.
 
-[actions-badge]: https://github.com/lzutao/junction/workflows/Rust/badge.svg?branchName=master
-[actions-url]: https://github.com/lzutao/junction/actions
+[actions-badge]: https://github.com/tesuji/junction/workflows/Rust/badge.svg?branchName=master
+[actions-url]: https://github.com/tesuji/junction/actions
 [junction]: https://learn.microsoft.com/en-us/windows/win32/fileio/hard-links-and-junctions#junctions
 [perm]: https://en.wikipedia.org/wiki/NTFS_links#Restrictions_and_drawbacks
 [^1]: https://blogs.windows.com/windowsdeveloper/2016/12/02/symlinks-windows-10/#Ed9Olhkz6hJp4KWV.97
